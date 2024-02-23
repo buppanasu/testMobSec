@@ -1,6 +1,7 @@
 package com.example.testmobsec
 
 import android.util.Log
+import android.widget.Toast
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -24,6 +25,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 
 import com.example.testmobsec.util.*
 
@@ -34,7 +37,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 
 @Composable
 //fun RegisterScreen(haredViewModel: SharedViewModel)
-fun RegisterScreen(sharedViewModel: SharedViewModel){
+fun RegisterScreen(sharedViewModel: SharedViewModel,navController: NavController = rememberNavController()){
     var email:String by remember { mutableStateOf("") }
     var name:String by remember { mutableStateOf("") }
     var password:String by remember { mutableStateOf("") }
@@ -113,6 +116,8 @@ fun RegisterScreen(sharedViewModel: SharedViewModel){
                                 .addOnSuccessListener{
                                     //Store data successfully, handle success
                                     sharedViewModel.saveData(userData = userData, context = context)
+                                    Toast.makeText(context, "Register Success!", Toast.LENGTH_SHORT).show()
+                                    navController.navigate("login_screen")
                                 }
                                 .addOnFailureListener{e ->
                                     //Handle firestore error
@@ -130,7 +135,7 @@ fun RegisterScreen(sharedViewModel: SharedViewModel){
             }){
                 Text("Register")
             }
-            Button( onClick = {}){
+            Button( onClick = {navController.navigate("login_screen")}){
                 Text("Already Registered? Login Here")
             }
 

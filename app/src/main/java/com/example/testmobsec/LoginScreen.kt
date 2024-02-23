@@ -21,11 +21,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 import com.example.testmobsec.util.UserRole
 import com.google.firebase.auth.FirebaseAuth
 
 @Composable
-fun LoginScreen(){
+fun LoginScreen(navController: NavController = rememberNavController()){
 
     var email:String by remember { mutableStateOf("") }
     var password:String by remember { mutableStateOf("") }
@@ -58,6 +60,7 @@ fun LoginScreen(){
                             val user = task.result.user!!
                             Log.d("LoginScreen", "Logged in user: ${user.email}")
                             Toast.makeText(context, "Correct email and password", Toast.LENGTH_SHORT).show()
+                            navController.navigate("home_screen")
                         }
                         else{
                             //Login failed, handle error
@@ -74,6 +77,7 @@ fun LoginScreen(){
             }
             Button(
                 onClick = {
+                    navController.navigate("register_screen")
                     // Navigate to the signup screen (replace with your navigation logic)
                     //Navigator.push(context, MaterialPageRoute(builder: { context } => RegisterScreen(sharedViewModel)))
                 }

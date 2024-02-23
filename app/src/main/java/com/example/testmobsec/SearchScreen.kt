@@ -1,3 +1,6 @@
+package com.example.testmobsec
+
+import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -6,6 +9,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
@@ -19,45 +23,61 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
+import com.example.testmobsec.BottomAppBarContent
 
+@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
-fun SearchScreenFunction(){
-    //SearchScreen()
-    val viewModel = viewModel<SearchScreen>()
-    val searchText by viewModel.searchText.collectAsState()
-    val persons by viewModel.persons.collectAsState()
-    val isSearching by viewModel.isSearching.collectAsState()
-    Column(modifier = Modifier
-        .fillMaxSize()
-        .padding(16.dp)){
-        TextField(
-            value = searchText,
-            onValueChange = viewModel::onSearchTextChange,
-            modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text(text = "Search") }
-        )
-        Spacer(modifier = Modifier.height(16.dp))
-        LazyColumn(modifier = Modifier
-            .fillMaxWidth()
-            .weight(1f)){
-            items(persons){
-                    person ->
-                //This is the things that appear, so what we want to do now is
-                //once we click a person, it will go to the detailed profile of the person
-                Text(
-                    text = "${person.firstName} ${person.lastName}",
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 16.dp)
-                )
-            }
-        }
+fun SearchScreen(
+    navController: NavController = rememberNavController()
+){
+    Scaffold(
+        bottomBar = { BottomAppBarContent(navController) }
+    ) {
 
+
+        val viewModel = viewModel<SearchViewModel>()
+//    val viewModel: SearchViewModel = viewModel()
+        val searchText by viewModel.searchText.collectAsState()
+        val persons by viewModel.persons.collectAsState()
+        val isSearching by viewModel.isSearching.collectAsState()
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp)
+        ) {
+            TextField(
+                value = searchText,
+                onValueChange = viewModel::onSearchTextChange,
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text(text = "Search") }
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+            ) {
+                items(persons) { person ->
+                    //This is the things that appear, so what we want to do now is
+                    //once we click a person, it will go to the detailed profile of the person
+                    Text(
+                        text = "${person.firstName} ${person.lastName}",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 16.dp)
+                    )
+                }
+            }
+
+        }
     }
 }
-class SearchScreen: ViewModel(){
+class SearchViewModel: ViewModel(){
 
 
 
@@ -141,4 +161,8 @@ private val allPersons = listOf(
 //what do we need before we can implement actual search logic?
 //function that defines if a certain person matches the search query. we want
 //define the function in Person class as its its business logic.
-
+@Preview(showBackground = true)
+@Composable
+fun PreviewSearchScreen() {
+    SearchScreen()
+}

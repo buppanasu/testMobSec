@@ -26,10 +26,12 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.navigation.NavController
+import androidx.navigation.compose.rememberNavController
 
 
 @Composable
-fun OthersProfileScreen(){
+fun OthersProfileScreen(navController: NavController = rememberNavController()){
     Column(modifier = Modifier.fillMaxSize()){
         Row(modifier = Modifier.weight(2f).fillMaxWidth(), verticalAlignment = Alignment.CenterVertically){
             //Text("Test1")
