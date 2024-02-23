@@ -43,6 +43,7 @@ fun OthersProfileScreen(){
             Column(){
                 Text("Sara Mathew", modifier = Modifier.paddingFromBaseline(top = 20.dp), fontSize = 23.sp)
                 Text("Location: Bangalore, India",)
+
             }
         }
         Row(modifier = Modifier.weight(1f).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.Top){

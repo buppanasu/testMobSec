@@ -1,0 +1,49 @@
+{
+  "project_info": {
+    "project_number": "804165493539",
+    "firebase_url": "https://mobsec-c1f84-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "mobsec-c1f84",
+    "storage_bucket": "mobsec-c1f84.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:804165493539:android:0076261e5e3d6b7f196296",
+        "android_client_info": {
+          "package_name": "com.example.DoctorSIT"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAfJI9jRAEBFJ-GvrWaQxRmLQT4n4PV3IE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:804165493539:android:f7ae9fe3efac7a1a196296",
+        "android_client_info": {
+          "package_name": "com.example.testmobsec"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAfJI9jRAEBFJ-GvrWaQxRmLQT4n4PV3IE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
