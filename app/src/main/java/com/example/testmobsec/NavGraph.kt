@@ -21,7 +21,7 @@ sealed class Screen(val route:String){
 
     data object SearchScreen: Screen(route = "search_screen")
     data object UploadScreen: Screen(route = "upload_screen")
-
+    data object EditProfileScreen: Screen(route = "edit_profile_screen")
 }
 
 @Composable
@@ -69,5 +69,11 @@ fun NavGraph(
                 navController = navController
             )
         }
+        composable(Screen.EditProfileScreen.route){
+            EditProfileScreen(
+                navController = navController
+            )
+        }
+
     }
 }
