@@ -1,6 +1,5 @@
 package com.example.testmobsec
 
-import android.annotation.SuppressLint
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -11,6 +10,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.paddingFromBaseline
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -34,18 +34,19 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 
 
-@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 fun HomeScreen(navController: NavController = rememberNavController()) {
     Scaffold(
+        topBar = { TopAppBarContent(navController = navController) },
         bottomBar = { BottomAppBarContent(navController) }
     ){
+            paddingValues ->
 
 
     Column(modifier = Modifier.fillMaxSize()) {
         // Top-bar consisting of profile picture, app logo and settings
         Row(
-            modifier = Modifier.fillMaxWidth().background(Color.Black),
+            modifier = Modifier.fillMaxWidth().background(Color.Black).padding(paddingValues),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
 

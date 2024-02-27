@@ -1,6 +1,5 @@
 package com.example.testmobsec
 
-import android.annotation.SuppressLint
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
@@ -11,16 +10,18 @@ import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 
-@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
+
 @Composable
 fun UploadScreen(
     navController: NavController = rememberNavController()
 ) {
     Scaffold(
+        topBar = { TopAppBarContent(navController = navController) },
         bottomBar = { BottomAppBarContent(navController) }
     ) {
+        paddingValues->
         // Content of your screen
-        Text("Upload", modifier = Modifier.padding(16.dp))
+        Text("Upload", modifier = Modifier.padding(paddingValues))
     }
 }
 

@@ -57,9 +57,11 @@ fun ProfileScreen(
     val profileViewModel: ProfileViewModel = viewModel()
     var selectedTab by remember { mutableStateOf(0) }
     Scaffold(
+        topBar = { TopAppBarContent(navController = navController) },
         bottomBar = { BottomAppBarContent(navController) }
     ) {
-        Column(modifier = Modifier.fillMaxSize()) {
+            paddingValues ->
+        Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
            ProfileTopSection(navController,profileViewModel)
             TabRowSection(selectedTab) { tab ->
                 selectedTab = tab
