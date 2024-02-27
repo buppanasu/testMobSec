@@ -29,6 +29,7 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -43,20 +44,23 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.example.testmobsec.viewModel.ProfileViewModel
 
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 fun ProfileScreen(
     navController: NavController = rememberNavController()
 ) {
+    val profileViewModel: ProfileViewModel = viewModel()
     var selectedTab by remember { mutableStateOf(0) }
     Scaffold(
         bottomBar = { BottomAppBarContent(navController) }
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-           ProfileTopSection(navController)
+           ProfileTopSection(navController,profileViewModel)
             TabRowSection(selectedTab) { tab ->
                 selectedTab = tab
             }
@@ -105,7 +109,9 @@ fun TabRowSection(selectedTab: Int, onTabSelected: (Int) -> Unit){
     }
 }
 @Composable
-fun ProfileTopSection(navController: NavController){
+fun ProfileTopSection(navController: NavController,
+                      profileViewModel: ProfileViewModel){
+    val name by profileViewModel.name.collectAsState()
     Row(
         modifier = Modifier
             .padding(vertical = 8.dp)
@@ -124,12 +130,12 @@ fun ProfileTopSection(navController: NavController){
         )
         Spacer(modifier = Modifier.width(20.dp))
         Column() {
-            Text(
-                "Sara Mathew",
-                modifier = Modifier.paddingFromBaseline(top = 20.dp),
-                fontSize = 23.sp
-            )
-            Text("Location: Bangalore, India",)
+            name?.let {
+                Text(text = "Name: $it",
+                    modifier = Modifier.paddingFromBaseline(top = 20.dp),
+                    fontSize = 23.sp)
+            }
+            Text(profileViewModel.getCreationTimestamp().toString()) //created at
 
         }
     }
