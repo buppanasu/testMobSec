@@ -4,5 +4,5 @@ data class UserData(
     var email: String = "",
     var name: String = "",
     var role: UserRole = UserRole.USER,
-    var password: String = ""
+    var following: List<String> = emptyList()  // Specify the type for following
 )

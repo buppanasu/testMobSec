@@ -60,6 +60,8 @@ fun TopAppBarContent(navController: NavController) {
         "practice_screen" -> "Practice"
         "search_screen" -> "Search"
         "edit_profile_screen" -> "Edit Profile Details"
+        "createorjoinband_screen" -> "TBC: Create or join Band"
+        "createband_screen" -> "TBC: Create Band"
         // Add more cases for other screens
         else -> "App"
     }

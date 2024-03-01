@@ -2,11 +2,14 @@ package com.example.testmobsec
 
 import android.util.Log
 import android.widget.Toast
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.paddingFromBaseline
 import androidx.compose.material3.Button
@@ -22,6 +25,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -49,42 +53,47 @@ fun RegisterScreen(sharedViewModel: SharedViewModel,navController: NavController
     val context = LocalContext.current
 
 
-    Column(modifier = Modifier.fillMaxSize()){
 
         //This column is for filling up of input
-        Column(modifier = Modifier.weight(6f).padding(20.dp), verticalArrangement = Arrangement.SpaceEvenly){
-            Text("Sign up!", fontWeight = FontWeight.Bold, fontSize = 25.sp)
-            OutlinedTextField(
+        Column(modifier = Modifier.fillMaxSize().padding(50.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally){
+            Image(
+                painter = painterResource(id = R.drawable.signupscreenimage),
+                contentDescription = ""
+            )
+            Spacer(modifier = Modifier.height(10.dp))
+            TextField(
                 value = name,
                 onValueChange = {name = it} ,
                 modifier = Modifier.fillMaxWidth(),
                 placeholder = { Text(text = "Username") }
             )
-            OutlinedTextField(
+            Spacer(modifier = Modifier.height(10.dp))
+            TextField(
                 value = email,
                 onValueChange = {email = it} ,
                 modifier = Modifier.fillMaxWidth(),
                 placeholder = { Text(text = "Email") }
             )
-            OutlinedTextField(
+            Spacer(modifier = Modifier.height(10.dp))
+            TextField(
                 value = password,
                 onValueChange = {password = it} ,
                 modifier = Modifier.fillMaxWidth(),
                 placeholder = { Text(text = "Password") }
             )
-            Text(text = "Role", fontWeight = FontWeight.Bold, fontSize = 25.sp)
+            Spacer(modifier = Modifier.height(10.dp))
+
+            Spacer(modifier = Modifier.height(10.dp))
 
             // Radio button for user
             Row {
+                Text(text = "Signup as:", fontSize = 15.sp, modifier = Modifier.paddingFromBaseline(top = 28.dp))
                 RadioButton(
                     selected = selectedRole == UserRole.USER,
                     onClick = { selectedRole = UserRole.USER }
                 )
                 Text("User", modifier = Modifier.paddingFromBaseline(top = 28.dp))
-            }
-
-            // Radio button for event manager
-            Row {
+                // Radio button for event manager
                 RadioButton(
                     selected = selectedRole == UserRole.EVENT_MANAGER,
                     onClick = { selectedRole = UserRole.EVENT_MANAGER }
@@ -92,16 +101,10 @@ fun RegisterScreen(sharedViewModel: SharedViewModel,navController: NavController
                 Text("Event Manager", modifier = Modifier.paddingFromBaseline(top = 28.dp))
             }
 
-
-        }
-
-        Column(modifier = Modifier.weight(4f).fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally){
-
             Button( onClick = {
                 val userData = UserData(
                     name = name,
                     email = email,
-                    password = password,
                     role = selectedRole
                 )
 
@@ -136,10 +139,12 @@ fun RegisterScreen(sharedViewModel: SharedViewModel,navController: NavController
                 Text("Register")
             }
             Button( onClick = {navController.navigate("login_screen")}){
-                Text("Already Registered? Login Here")
+                Text("Login Here")
             }
+
+
 
         }
 
-    }
+
 }
