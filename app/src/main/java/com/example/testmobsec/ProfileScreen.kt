@@ -50,6 +50,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -82,7 +83,9 @@ fun ProfileScreen(
 //        isFloatingActionButtonDocked = false, // Set to false so the FAB is not docked in the BottomAppBar
     ) {
             paddingValues ->
-        Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+        Column(modifier = Modifier
+            .fillMaxSize()
+            .padding(paddingValues)) {
            ProfileTopSection(navController,profileViewModel)
             TabRowSection(selectedTab = selectedTab, onTabSelected = { tab ->
                 selectedTab = tab
@@ -140,6 +143,7 @@ fun TabRowSection(selectedTab: Int, onTabSelected: (Int) -> Unit,
             // Display posts in the first tab
             LazyColumn {
                 items(posts) { postMap ->
+                    val name = postMap["userName"] as? String?: "No Content"
                     val content = postMap["content"] as? String ?: "No Content"
                     val timestamp = postMap["timestamp"]
                     Row(
@@ -153,8 +157,12 @@ fun TabRowSection(selectedTab: Int, onTabSelected: (Int) -> Unit,
                                 .weight(1f)
                                 .padding(8.dp)
                         ) {
-                            Text(text = content, style = MaterialTheme.typography.bodyMedium)
-                            Text(text = formatDate(timestamp), style = MaterialTheme.typography.bodySmall)
+                            Text(text = name, fontWeight = FontWeight.Bold,
+                                style = TextStyle(fontSize = 18.sp)
+                            )
+                            Divider()
+                            Text(text = content, style = TextStyle(fontSize = 14.sp))
+                            Text(text = formatDate(timestamp), style = TextStyle(fontSize = 12.sp))
                             Spacer(modifier = Modifier.height(4.dp))
                             IconButton(onClick = { /* Handle comment action */ }) {
                                 Icon(Icons.Filled.Comment, contentDescription = "Comment")

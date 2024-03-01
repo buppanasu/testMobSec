@@ -6,6 +6,7 @@ import android.widget.Toast
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
@@ -24,34 +25,108 @@ class PostViewModel: ViewModel() {
     private val _posts = MutableStateFlow<List<Map<String, Any>>>(emptyList())
     val posts: StateFlow<List<Map<String, Any>>> = _posts
 
-    fun fetchPostsForUser() {
-        viewModelScope.launch {
+    fun fetchPostsForHome(){
+        viewModelScope.launch{
             try {
-                // Construct a reference to the user's document in the users collection
-                val userRef = userId?.let { db.collection("users").document(it) }
+                // Assuming "userId" holds the ID of the current user
+                val currentUserRef = userId?.let { db.collection("users").document(it) }
 
-                // Query the posts collection for documents where the userId field matches the userRef
+                // Fetch all posts
                 val result: QuerySnapshot = db.collection("posts")
-                    .whereEqualTo("userId", userRef) // Use the reference for querying
-                    .orderBy("timestamp", Query.Direction.DESCENDING) // Assuming you want to order by the timestamp
+                    .orderBy("timestamp", Query.Direction.DESCENDING) // Order by the timestamp
                     .get()
                     .await()
-                // Check if the result is empty
-                if (result.isEmpty) {
-                    Log.d("PostViewModel", "No posts found for user")
-                } else {
-                    Log.d("PostViewModel", "Fetched ${result.size()} posts for user")
-                }
-                // Mapping the result to a list of maps (or you could use a data class for your posts)
-                val postsList = result.documents.mapNotNull { it.data }
 
-                _posts.value = postsList
+                if (result.isEmpty) {
+                    Log.d("PostViewModel", "No posts found")
+                } else {
+                    Log.d("PostViewModel", "Fetched posts excluding current user")
+                }
+
+                // Initialize an empty list to hold the posts with user names
+                val postsWithUserNames = mutableListOf<Map<String, Any>>()
+                val filteredPosts = result.documents.filter { document ->
+                    document["userId"] != currentUserRef
+                }
+                // Iterate through each document in the result
+                for (document in filteredPosts) {
+                    val postData = document.data as MutableMap<String, Any>
+
+                    // Get the user reference from the post
+                    val userRef = postData["userId"] as DocumentReference
+
+                    // Fetch the user document based on the reference
+                    val userDoc = userRef.get().await()
+
+                    // Retrieve the user's name from the user document
+                    val userName = userDoc.getString("name") ?: "Unknown User"
+
+                    // Add the user's name to the post data
+                    postData["userName"] = userName
+
+                    // Add the modified post data to the list
+                    postsWithUserNames.add(postData)
+                }
+
+
+                _posts.value = postsWithUserNames
             } catch (e: Exception) {
                 // Handle error
                 _posts.value = emptyList()
             }
         }
+
     }
+
+    fun fetchPostsForUser() {
+        viewModelScope.launch {
+            try {
+                // Query the posts collection for documents where the userId field matches the userRef
+                val result: QuerySnapshot = db.collection("posts")
+                    .whereEqualTo("userId", userId?.let { db.collection("users").document(it) })
+                    .orderBy("timestamp", Query.Direction.DESCENDING)
+                    .get()
+                    .await()
+
+                if (result.isEmpty) {
+                    Log.d("PostViewModel", "No posts found for user")
+                } else {
+                    Log.d("PostViewModel", "Fetched ${result.size()} posts for user")
+                }
+
+                // Initialize an empty list to hold the posts with user names
+                val postsWithUserNames = mutableListOf<Map<String, Any>>()
+
+                // Iterate through each document in the result
+                for (document in result.documents) {
+                    val postData = document.data as MutableMap<String, Any>
+
+                    // Get the user reference from the post
+                    val userRef = postData["userId"] as DocumentReference
+
+                    // Fetch the user document based on the reference
+                    val userDoc = userRef.get().await()
+
+                    // Retrieve the user's name from the user document
+                    val userName = userDoc.getString("name") ?: "Unknown User"
+
+                    // Add the user's name to the post data
+                    postData["userName"] = userName
+
+                    // Add the modified post data to the list
+                    postsWithUserNames.add(postData)
+                }
+
+                // Update the MutableStateFlow with the modified list of posts
+                _posts.value = postsWithUserNames
+            } catch (e: Exception) {
+                // Handle error
+                Log.e("PostViewModel", "Error fetching posts with user names", e)
+                _posts.value = emptyList()
+            }
+        }
+    }
+
     fun uploadPost(
         content: String,
         context: Context, // Added context parameter

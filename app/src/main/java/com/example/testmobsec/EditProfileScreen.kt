@@ -271,6 +271,15 @@ fun EditProfileSection(
                 )
             }
 
+            Button(
+                onClick = {
+                    // Show reauthentication dialog before updating the password
+                   navController.navigate("login_screen")
+                },
+            ) {
+                Text("Log Out")
+            }
+
 
 
 
