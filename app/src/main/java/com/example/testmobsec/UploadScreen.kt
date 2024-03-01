@@ -20,6 +20,7 @@ fun UploadScreen(
         bottomBar = { BottomAppBarContent(navController) }
     ) {
         paddingValues->
+
         // Content of your screen
         Text("Upload", modifier = Modifier.padding(paddingValues))
     }

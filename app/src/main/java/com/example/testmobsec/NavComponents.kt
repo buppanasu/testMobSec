@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
@@ -60,6 +61,7 @@ fun TopAppBarContent(navController: NavController) {
         "practice_screen" -> "Practice"
         "search_screen" -> "Search"
         "edit_profile_screen" -> "Edit Profile Details"
+        "post_screen" -> "Post"
         // Add more cases for other screens
         else -> "App"
     }
@@ -79,6 +81,14 @@ fun TopAppBarContent(navController: NavController) {
                     )
                 }
             }
+            else if(currentRoute == "post_screen"){
+                IconButton(onClick = { navController.navigate("profile_screen")  }) {
+                    Icon(
+                        imageVector = Icons.Filled.Close,
+                        contentDescription = "Close"
+                    )
+                }
+            }
         },
         actions = {
             if(currentRoute == "profile_screen") {
@@ -93,6 +103,11 @@ fun TopAppBarContent(navController: NavController) {
             else if(currentRoute == "edit_profile_screen"){
                 TextButton(onClick = { /* TODO save */ }) {
                     Text("Save")
+                }
+            }
+            else if(currentRoute == "post_screen"){
+                TextButton(onClick = { /* TODO save */ }) {
+                    Text("Post")
                 }
             }
             else{

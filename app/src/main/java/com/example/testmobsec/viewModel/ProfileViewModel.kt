@@ -2,6 +2,7 @@ package com.example.testmobsec.viewModel
 
 
 import android.content.Context
+import android.net.Uri
 import android.widget.Toast
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -11,6 +12,7 @@ import com.google.firebase.auth.EmailAuthProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.SetOptions
+import com.google.firebase.storage.FirebaseStorage
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.CoroutineScope
@@ -23,9 +25,13 @@ import java.util.Locale
 class ProfileViewModel : ViewModel() {
     private var auth: FirebaseAuth = FirebaseAuth.getInstance()
     private var firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
+    private var storage = FirebaseStorage.getInstance()
 
     var currentUser by mutableStateOf(auth.currentUser)
         private set
+
+    private val _profileImageUrl = MutableStateFlow<String?>(null)
+    val profileImageUrl = _profileImageUrl.asStateFlow()
 
     // StateFlows for first name and last name
     private val _name = MutableStateFlow<String?>(null)
@@ -72,6 +78,55 @@ class ProfileViewModel : ViewModel() {
             val sdf = SimpleDateFormat("dd/MM/yyyy", Locale.getDefault())
             sdf.format(Date(timestamp))
         }
+    }
+
+
+
+    fun fetchProfileImageUrl() {
+        val userId = auth.currentUser?.uid ?: return
+
+        // Define the path in Firebase Storage where the profile image is stored
+        val storageRef = storage.reference.child("images/$userId/profile_picture.jpg")
+
+        storageRef.downloadUrl
+            .addOnSuccessListener { uri ->
+                // Update the StateFlow with the image URL
+                _profileImageUrl.value = uri.toString()
+            }
+            .addOnFailureListener {
+                // Handle any errors, e.g., file doesn't exist
+                _profileImageUrl.value = null
+            }
+    }
+    fun updateProfilePicture(uri: Uri, context: Context, onSuccess: () -> Unit, onFailure: (Exception) -> Unit) {
+        val userId = auth.currentUser?.uid
+        if (userId == null) {
+            CoroutineScope(Dispatchers.Main).launch {
+                Toast.makeText(context, "User must be logged in to update profile picture.", Toast.LENGTH_SHORT).show()
+            }
+            onFailure(Exception("User not logged in"))
+            return
+        }
+
+        // Define the path in Firebase Storage
+        val storageRef = storage.reference.child("images/$userId/profile_picture.jpg")
+
+        // Upload the image
+        storageRef.putFile(uri)
+            .addOnSuccessListener {
+                // Get the download URL
+                storageRef.downloadUrl.addOnSuccessListener { downloadUri ->
+                    // Here you can optionally update the Firestore document if you keep the image URL there
+                    Toast.makeText(context, "Photo updated successfully", Toast.LENGTH_SHORT).show()
+                    fetchProfileImageUrl()
+                }
+            }
+            .addOnFailureListener { exception ->
+                CoroutineScope(Dispatchers.Main).launch {
+                    Toast.makeText(context, exception.message ?: "Upload failed", Toast.LENGTH_SHORT).show()
+                }
+                onFailure(exception)
+            }
     }
     fun updateUserProfile(
         name: String,
@@ -130,6 +185,13 @@ class ProfileViewModel : ViewModel() {
         onFailure: (Exception) -> Unit
     ) {
         val user = FirebaseAuth.getInstance().currentUser
+        if (oldPassword == newPassword) {
+            CoroutineScope(Dispatchers.Main).launch {
+                Toast.makeText(context, "The new password must be different from the current password.", Toast.LENGTH_SHORT).show()
+            }
+            onFailure(Exception("The new password must be different from the current password."))
+            return
+        }
 
         if (newPassword != confirmNewPassword) {
             CoroutineScope(Dispatchers.Main).launch {

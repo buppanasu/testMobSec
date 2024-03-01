@@ -1,5 +1,6 @@
 package com.example.testmobsec
 
+import PostScreen
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
@@ -22,6 +23,8 @@ sealed class Screen(val route:String){
     data object SearchScreen: Screen(route = "search_screen")
     data object UploadScreen: Screen(route = "upload_screen")
     data object EditProfileScreen: Screen(route = "edit_profile_screen")
+
+    data object PostScreen: Screen(route = "post_screen")
 }
 
 @Composable
@@ -71,6 +74,11 @@ fun NavGraph(
         }
         composable(Screen.EditProfileScreen.route){
             EditProfileScreen(
+                navController = navController
+            )
+        }
+        composable(Screen.PostScreen.route){
+            PostScreen(
                 navController = navController
             )
         }

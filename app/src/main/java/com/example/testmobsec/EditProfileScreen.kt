@@ -1,11 +1,15 @@
 package com.example.testmobsec
 
 import android.annotation.SuppressLint
+import android.net.Uri
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -59,6 +63,20 @@ fun EditProfileScreen(
 
 ) {
     val profileViewModel: ProfileViewModel = viewModel()
+
+    Scaffold(
+        bottomBar = { BottomAppBarContent(navController) }
+    ) {
+        paddingValue ->
+        EditProfileSection(navController, paddingValue,profileViewModel)
+    }
+    }
+
+@Composable
+fun EditProfileSection(
+    navController: NavController, paddingValue: PaddingValues,
+    profileViewModel: ProfileViewModel
+){
     val context = LocalContext.current // Get the context
     val name by profileViewModel.name.collectAsState()
     val email by profileViewModel.email.collectAsState()
@@ -70,6 +88,10 @@ fun EditProfileScreen(
     var newPassword by remember { mutableStateOf("") }
     var confirmNewPassword by remember { mutableStateOf("") }
 
+    val isFormValid = remember(oldPassword, newPassword, confirmNewPassword) {
+        oldPassword.isNotEmpty() && newPassword.isNotEmpty() && confirmNewPassword.isNotEmpty()
+    }
+
     // state for reauth
     var reauthPassword by remember { mutableStateOf("") }
     var showReauthDialog by remember { mutableStateOf(false) }
@@ -78,9 +100,7 @@ fun EditProfileScreen(
         nameText = name ?: ""
         emailText = email ?: ""
     }
-    Scaffold(
-        bottomBar = { BottomAppBarContent(navController) }
-    ) {
+
         // Content of your screen
         Column(modifier = Modifier.fillMaxSize()) {
 
@@ -101,8 +121,9 @@ fun EditProfileScreen(
                         .clip(CircleShape)
                         .border(1.5.dp, MaterialTheme.colorScheme.primary, CircleShape)
                 )
-                TextButton(onClick = {  }) {
-                    Text("Change Profile Photo")
+
+                TextButton(onClick = { /*TODO*/ }) {
+                    Text("Change Profile Picture")
                 }
             }
 
@@ -173,14 +194,15 @@ fun EditProfileScreen(
                     // Show reauthentication dialog before updating the password
                     showReauthDialog = true
                 },
-                modifier = Modifier.fillMaxWidth()
+                modifier = Modifier.fillMaxWidth(),
+                enabled = isFormValid
             ) {
                 Text("Change Password")
             }
 
-            // Reauthentication and Password Update Dialog
             // Reauthentication Dialog
             if (showReauthDialog) {
+                var showError by remember { mutableStateOf(false) }
                 AlertDialog(
                     onDismissRequest = { showReauthDialog = false },
                     title = { Text("Reauthenticate") },
@@ -190,36 +212,59 @@ fun EditProfileScreen(
                             Spacer(modifier = Modifier.height(8.dp))
                             OutlinedTextField(
                                 value = reauthPassword,
-                                onValueChange = { reauthPassword = it },
+                                onValueChange = {
+                                    reauthPassword = it
+                                    showError = it.isEmpty() // Update showError based on whether input is empty
+                                },
                                 modifier = Modifier.fillMaxWidth(),
                                 placeholder = { Text(text = "Current Password") },
                                 visualTransformation = PasswordVisualTransformation(),
-                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password)
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                                isError = showError
                             )
+                            if (showError) {
+                                Text(
+                                    "Password cannot be empty",
+                                    color = MaterialTheme.colorScheme.error,
+                                    style = MaterialTheme.typography.bodySmall
+                                )
+                            }
                         }
                     },
                     confirmButton = {
                         Button(
                             onClick = {
-                                profileViewModel.updateUserPassword(
-                                    oldPassword, newPassword, confirmNewPassword,context,
-                                    onSuccess = {
-                                        Toast.makeText(context, "Password updated successfully", Toast.LENGTH_SHORT).show()
-                                        showReauthDialog = false
-                                        navController.navigate("profile_screen")
-                                    },
-                                    onFailure = { exception ->
-                                        Toast.makeText(context, "Failed to update password: ${exception.localizedMessage}", Toast.LENGTH_LONG).show()
-                                        showReauthDialog = false
-                                    }
-                                )
+                                if (reauthPassword.isEmpty()) {
+                                    showError = true // Show error if confirm is clicked with empty password
+                                } else {
+                                    profileViewModel.updateUserPassword(
+                                        reauthPassword, newPassword, confirmNewPassword, context,
+                                        onSuccess = {
+                                            Toast.makeText(context, "Password updated successfully", Toast.LENGTH_SHORT).show()
+                                            oldPassword = ""
+                                            newPassword = ""
+                                            confirmNewPassword = ""
+                                            reauthPassword = ""
+                                            showReauthDialog = false
+                                        },
+                                        onFailure = { exception ->
+                                            oldPassword = ""
+                                            newPassword = ""
+                                            confirmNewPassword = ""
+                                            reauthPassword = ""
+                                            showReauthDialog = false
+                                        }
+                                    )
+                                }
                             }
                         ) {
                             Text("Confirm")
                         }
                     },
                     dismissButton = {
-                        Button(onClick = { showReauthDialog = false }) {
+                        Button(onClick = {
+                            showReauthDialog = false
+                            reauthPassword = ""}) {
                             Text("Cancel")
                         }
                     }
@@ -229,9 +274,9 @@ fun EditProfileScreen(
 
 
 
-            }
         }
     }
+
 
 
 @Preview(showBackground = true)

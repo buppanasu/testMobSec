@@ -1,6 +1,7 @@
 package com.example.testmobsec
 
-import android.annotation.SuppressLint
+import android.icu.text.SimpleDateFormat
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -11,18 +12,27 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.paddingFromBaseline
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Comment
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material3.Button
 import androidx.compose.material3.Divider
+import androidx.compose.material3.FabPosition
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Tab
@@ -47,25 +57,36 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import com.example.testmobsec.viewModel.PostViewModel
 import com.example.testmobsec.viewModel.ProfileViewModel
+import java.util.Locale
 
-@SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
+
 @Composable
 fun ProfileScreen(
     navController: NavController = rememberNavController()
 ) {
     val profileViewModel: ProfileViewModel = viewModel()
+    val postsViewModel: PostViewModel = viewModel()
     var selectedTab by remember { mutableStateOf(0) }
+
     Scaffold(
         topBar = { TopAppBarContent(navController = navController) },
-        bottomBar = { BottomAppBarContent(navController) }
+        bottomBar = { BottomAppBarContent(navController) },
+        floatingActionButton = { // Use the floatingActionButton parameter to add the IconButton at the bottom right
+            FloatingActionButton(onClick = { navController.navigate("post_screen")}) {
+                Icon(Icons.Filled.Add, contentDescription = "Add")
+            }
+        },
+        floatingActionButtonPosition = FabPosition.End, // Position the button at the end (right)
+//        isFloatingActionButtonDocked = false, // Set to false so the FAB is not docked in the BottomAppBar
     ) {
             paddingValues ->
         Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
            ProfileTopSection(navController,profileViewModel)
-            TabRowSection(selectedTab) { tab ->
+            TabRowSection(selectedTab = selectedTab, onTabSelected = { tab ->
                 selectedTab = tab
-            }
+            }, postsViewModel = postsViewModel)
 
 
         }
@@ -75,13 +96,20 @@ fun ProfileScreen(
 
 }
 @Composable
-fun TabRowSection(selectedTab: Int, onTabSelected: (Int) -> Unit){
+fun TabRowSection(selectedTab: Int, onTabSelected: (Int) -> Unit,
+                  postsViewModel: PostViewModel){
+    // Observe the posts list from the ViewModel
+    val posts by postsViewModel.posts.collectAsState(initial = emptyList())
     TabRow(selectedTabIndex = selectedTab) {
         // Replace with your tabs
         Tab(
             selected = selectedTab == 0,
-            onClick = { onTabSelected(0) },
-            text = { Text("Tweets") }
+            onClick = { onTabSelected(0)
+                },
+            text = { Text("Posts") }
+
+
+
         )
         Tab(
             selected = selectedTab == 1,
@@ -101,13 +129,49 @@ fun TabRowSection(selectedTab: Int, onTabSelected: (Int) -> Unit){
     }
     // Content below tabs
     // This is a placeholder, replace it with your content based on the selected tab
-    Box(modifier = Modifier
-        .fillMaxSize()
-        .background(if (selectedTab == 0) Color.LightGray else Color.White)) {
-        Text(
-            text = "Content of Tab $selectedTab",
-            modifier = Modifier.align(Alignment.Center)
-        )
+//    Box(modifier = Modifier
+////        .fillMaxSize()
+//        )
+    if (selectedTab == 0) {
+        postsViewModel.fetchPostsForUser()
+    }
+    when (selectedTab) {
+        0 -> {
+            // Display posts in the first tab
+            LazyColumn {
+                items(posts) { postMap ->
+                    val content = postMap["content"] as? String ?: "No Content"
+                    val timestamp = postMap["timestamp"]
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(8.dp)
+                        ) {
+                            Text(text = content, style = MaterialTheme.typography.bodyMedium)
+                            Text(text = formatDate(timestamp), style = MaterialTheme.typography.bodySmall)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            IconButton(onClick = { /* Handle comment action */ }) {
+                                Icon(Icons.Filled.Comment, contentDescription = "Comment")
+                            }
+                        }
+                        IconButton(onClick = { /* Handle like action */ }) {
+                            Icon(Icons.Filled.ThumbUp, contentDescription = "Like")
+                        }
+                    }
+                    Divider()
+                }
+            }
+        }
+        1 -> {
+            Text("Test")
+            // Content for the second tab
+        }
     }
 }
 @Composable
@@ -179,7 +243,16 @@ fun ProfileTopSection(navController: NavController,
         }
     }
 }
-
+@Composable
+fun formatDate(timestamp: Any?): String {
+    return if (timestamp is com.google.firebase.Timestamp) {
+        val formatter = SimpleDateFormat("MMM dd, yyyy HH:mm", Locale.getDefault())
+        val date = timestamp.toDate()
+        formatter.format(date)
+    } else {
+        "Unknown date"
+    }
+}
 
 
 @Preview(showBackground = true)
