@@ -18,6 +18,10 @@ sealed class Screen(val route:String){
     data object LoginScreen: Screen(route = "login_screen")
     data object HomeScreen: Screen(route = "home_screen")
 
+    data object CreateOrJoinBandScreen: Screen(route = "createorjoinband_screen")
+
+    data object CreateBandScreen: Screen(route = "createband_screen")
+
     data object ProfileScreen: Screen(route = "profile_screen")
 
     data object SearchScreen: Screen(route = "search_screen")
@@ -36,7 +40,7 @@ fun NavGraph(
 
     NavHost(
         navController = navController,
-        startDestination = Screen.RegisterScreen.route,
+        startDestination = Screen.LoginScreen.route,
 
         ){
 //
@@ -49,6 +53,16 @@ fun NavGraph(
         }
         composable(Screen.LoginScreen.route){
             LoginScreen(
+                navController = navController
+            )
+        }
+        composable(Screen.CreateOrJoinBandScreen.route){
+            CreateOrJoinBandScreen(
+                navController = navController
+            )
+        }
+        composable(Screen.CreateBandScreen.route){
+            CreateBandScreen(
                 navController = navController
             )
         }
