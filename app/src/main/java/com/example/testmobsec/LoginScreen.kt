@@ -130,7 +130,7 @@ fun LoginScreen(navController: NavController = rememberNavController()) {
                                 Toast.LENGTH_SHORT
                             ).show()
                             // Navigates the next screen
-                            navController.navigate("createband_screen")
+                            navController.navigate("home_screen")
                         } else {
                             //Login failed, handle error
                             Log.e("LoginScreen", "Login Error: ${task.exception}")

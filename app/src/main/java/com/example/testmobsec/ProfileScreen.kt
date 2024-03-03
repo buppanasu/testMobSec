@@ -21,6 +21,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Comment
 import androidx.compose.material.icons.filled.Home
@@ -39,6 +40,7 @@ import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -61,6 +63,7 @@ import androidx.navigation.compose.rememberNavController
 import com.example.testmobsec.viewModel.PostViewModel
 import com.example.testmobsec.viewModel.ProfileViewModel
 import java.util.Locale
+import coil.compose.rememberAsyncImagePainter
 
 
 @Composable
@@ -89,7 +92,7 @@ fun ProfileScreen(
            ProfileTopSection(navController,profileViewModel)
             TabRowSection(selectedTab = selectedTab, onTabSelected = { tab ->
                 selectedTab = tab
-            }, postsViewModel = postsViewModel)
+            }, postsViewModel = postsViewModel, profileViewModel)
 
 
         }
@@ -100,7 +103,7 @@ fun ProfileScreen(
 }
 @Composable
 fun TabRowSection(selectedTab: Int, onTabSelected: (Int) -> Unit,
-                  postsViewModel: PostViewModel){
+                  postsViewModel: PostViewModel,profileViewModel: ProfileViewModel){
     // Observe the posts list from the ViewModel
     val posts by postsViewModel.posts.collectAsState(initial = emptyList())
     TabRow(selectedTabIndex = selectedTab) {
@@ -140,6 +143,10 @@ fun TabRowSection(selectedTab: Int, onTabSelected: (Int) -> Unit,
     }
     when (selectedTab) {
         0 -> {
+            val profileImageUrl by profileViewModel.profileImageUrl.collectAsState()
+            LaunchedEffect(true) {
+                profileViewModel.fetchProfileImageUrl()
+            }
             // Display posts in the first tab
             LazyColumn {
                 items(posts) { postMap ->
@@ -152,6 +159,18 @@ fun TabRowSection(selectedTab: Int, onTabSelected: (Int) -> Unit,
                             .padding(8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        Spacer(modifier = Modifier.width(35.dp))
+                        profileImageUrl?.let { url ->
+                            Image(
+                                painter = rememberAsyncImagePainter(url),
+                                contentDescription = "",
+                                modifier = Modifier
+                                    .size(100.dp)
+                                    .clip(CircleShape)
+                                    .border(1.5.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                            )
+                        }  ?: Text("No profile image available")
+                        Spacer(modifier = Modifier.width(20.dp))
                         Column(
                             modifier = Modifier
                                 .weight(1f)
@@ -182,10 +201,15 @@ fun TabRowSection(selectedTab: Int, onTabSelected: (Int) -> Unit,
         }
     }
 }
+
 @Composable
 fun ProfileTopSection(navController: NavController,
                       profileViewModel: ProfileViewModel){
     val name by profileViewModel.name.collectAsState()
+    val profileImageUrl by profileViewModel.profileImageUrl.collectAsState()
+    LaunchedEffect(true) {
+        profileViewModel.fetchProfileImageUrl()
+    }
     Row(
         modifier = Modifier
             .padding(vertical = 8.dp)
@@ -194,14 +218,16 @@ fun ProfileTopSection(navController: NavController,
     ) {
         //Text("Test1")
         Spacer(modifier = Modifier.width(35.dp))
-        Image(
-            painter = painterResource(id = R.drawable.ic_launcher_background),
-            contentDescription = "",
-            modifier = Modifier
-                .size(100.dp)
-                .clip(CircleShape)
-                .border(1.5.dp, MaterialTheme.colorScheme.primary, CircleShape)
-        )
+        profileImageUrl?.let { url ->
+            Image(
+                painter = rememberAsyncImagePainter(url),
+                contentDescription = "",
+                modifier = Modifier
+                    .size(100.dp)
+                    .clip(CircleShape)
+                    .border(1.5.dp, MaterialTheme.colorScheme.primary, CircleShape)
+            )
+        }  ?: Text("No profile image available")
         Spacer(modifier = Modifier.width(20.dp))
         Column() {
             name?.let {

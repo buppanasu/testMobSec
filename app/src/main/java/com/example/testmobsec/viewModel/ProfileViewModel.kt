@@ -3,8 +3,10 @@ package com.example.testmobsec.viewModel
 
 import android.content.Context
 import android.net.Uri
+import android.util.Log
 import android.widget.Toast
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
@@ -21,12 +23,19 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import javax.inject.Inject
+import androidx.compose.runtime.State
+import androidx.lifecycle.asLiveData
+import androidx.lifecycle.viewModelScope
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.tasks.await
 
-class ProfileViewModel : ViewModel() {
+class ProfileViewModel() : ViewModel() {
     private var auth: FirebaseAuth = FirebaseAuth.getInstance()
     private var firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
     private var storage = FirebaseStorage.getInstance()
-
+    private val _profileImageUrls = MutableStateFlow<Map<String, String?>>(emptyMap())
+    val profileImageUrls: StateFlow<Map<String, String?>> = _profileImageUrls
     var currentUser by mutableStateOf(auth.currentUser)
         private set
 
@@ -50,6 +59,25 @@ class ProfileViewModel : ViewModel() {
 
     init {
         FirebaseAuth.getInstance().addAuthStateListener(authStateListener)
+    }
+    // Function to fetch a profile image URL by userId and update the cache
+    fun fetchProfileImageUrlByUserId(userId: String) {
+        // Check if the URL is already cached to avoid refetching
+        if (_profileImageUrls.value.containsKey(userId)) return
+//        Log.d("Test",userId)
+        // Define the path in Firebase Storage where the profile image is stored
+        val storageRef = storage.reference.child("images/$userId/profile_picture.jpg")
+
+        viewModelScope.launch {
+            try {
+                val url = storage.reference.child("images/$userId/profile_picture.jpg").downloadUrl.await().toString()
+                // Update only the specific entry for efficiency
+                _profileImageUrls.value = _profileImageUrls.value.toMutableMap().also { it[userId] = url }
+            } catch (e: Exception) {
+                // Log the error or handle it as needed. The default image URL is already set.
+                Log.e("ProfileViewModel", "Error fetching profile image for userId: $userId", e)
+            }
+        }
     }
 
     private fun loadUserProfile() {
@@ -98,6 +126,7 @@ class ProfileViewModel : ViewModel() {
                 _profileImageUrl.value = null
             }
     }
+
     fun updateProfilePicture(uri: Uri, context: Context, onSuccess: () -> Unit, onFailure: (Exception) -> Unit) {
         val userId = auth.currentUser?.uid
         if (userId == null) {

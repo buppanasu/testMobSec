@@ -1,5 +1,8 @@
 package com.example.testmobsec
 
+import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.drawable.BitmapDrawable
 import android.util.Log
 import android.util.Patterns
 import android.widget.Toast
@@ -30,6 +33,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 
@@ -38,6 +43,7 @@ import com.example.testmobsec.util.*
 import com.example.testmobsec.util.UserData
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import java.io.ByteArrayOutputStream
 
 
 @Composable
@@ -53,7 +59,6 @@ fun RegisterScreen(sharedViewModel: SharedViewModel,navController: NavController
     var emailError: String by remember { mutableStateOf("") }
     var nameError: String by remember { mutableStateOf("") }
     var passwordError: String by remember { mutableStateOf("") }
-
 
     val context = LocalContext.current
 
@@ -79,6 +84,15 @@ fun RegisterScreen(sharedViewModel: SharedViewModel,navController: NavController
         return true
     }
 
+    // Utility function to convert drawable to ByteArray
+    fun drawableToByteArray(context: Context, drawableId: Int): ByteArray {
+        val drawable = ContextCompat.getDrawable(context, drawableId) as BitmapDrawable
+        val bitmap = drawable.bitmap
+        val stream = ByteArrayOutputStream()
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 100, stream)
+        return stream.toByteArray()
+    }
+
     fun validatePassword(): Boolean {
         if (password.isEmpty()) {
             passwordError = "Password cannot be empty"
@@ -89,6 +103,10 @@ fun RegisterScreen(sharedViewModel: SharedViewModel,navController: NavController
         }
         passwordError = ""
         return true
+    }
+    // Prepare the default image ByteArray
+    val defaultImageByteArray by remember {
+        mutableStateOf(drawableToByteArray(context, R.drawable.profile))
     }
 
         //This column is for filling up of input
@@ -180,11 +198,12 @@ fun RegisterScreen(sharedViewModel: SharedViewModel,navController: NavController
                             if (task.isSuccessful) {
                                 // User created successfully, now store additional data
                                 val userId = task.result.user!!.uid
+                                sharedViewModel.uploadDefaultProfileImage(userId,defaultImageByteArray, context)
                                 val userData = UserData(name = name, email = email, role = selectedRole)
                                 FirebaseFirestore.getInstance().collection("users").document(userId).set(userData)
                                     .addOnSuccessListener {
                                         // Data stored successfully
-                                        sharedViewModel.saveData(userData = userData, context = context)
+                                        sharedViewModel.saveData(userData = userData,defaultImageByteArray, context = context)
                                         Toast.makeText(context, "Register Success!", Toast.LENGTH_SHORT).show()
                                         navController.navigate("login_screen")
                                     }

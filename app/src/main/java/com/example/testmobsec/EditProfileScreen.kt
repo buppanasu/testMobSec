@@ -53,6 +53,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
+import coil.compose.rememberAsyncImagePainter
 import com.example.testmobsec.util.UserRole
 import com.example.testmobsec.viewModel.ProfileViewModel
 
@@ -96,9 +97,12 @@ fun EditProfileSection(
     var reauthPassword by remember { mutableStateOf("") }
     var showReauthDialog by remember { mutableStateOf(false) }
 
+    val profileImageUrl by profileViewModel.profileImageUrl.collectAsState()
+
     LaunchedEffect(name, email) {
         nameText = name ?: ""
         emailText = email ?: ""
+        profileViewModel.fetchProfileImageUrl()
     }
 
         // Content of your screen
@@ -113,17 +117,31 @@ fun EditProfileSection(
             }
             Column(horizontalAlignment = Alignment.CenterHorizontally, // Centers horizontally
                 modifier = Modifier.fillMaxWidth()){// Ensure the Column takes up the full width){
-                Image(
-                    painter = painterResource(id = R.drawable.ic_launcher_background),
-                    contentDescription = "",
-                    modifier = Modifier
-                        .size(100.dp)
-                        .clip(CircleShape)
-                        .border(1.5.dp, MaterialTheme.colorScheme.primary, CircleShape)
-                )
+                profileImageUrl?.let { url ->
+                    Image(
+                        painter = rememberAsyncImagePainter(url),
+                        contentDescription = "",
+                        modifier = Modifier
+                            .size(100.dp)
+                            .clip(CircleShape)
+                            .border(1.5.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                    )
+                }  ?: Text("No profile image available")
 
-                TextButton(onClick = { /*TODO*/ }) {
-                    Text("Change Profile Picture")
+                val launcher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
+                    uri?.let {
+                        profileViewModel.updateProfilePicture(it, context, {
+
+
+                        }, { exception ->
+                            // Handle failure
+                            exception.printStackTrace()
+                        })
+                    }
+                }
+
+                Button(onClick = { launcher.launch("image/*") }) {
+                    Text("Update Profile Picture")
                 }
             }
 
