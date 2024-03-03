@@ -1,6 +1,8 @@
 package com.example.testmobsec
 
 import android.content.Context
+import android.content.Intent
+import android.provider.Settings
 import android.graphics.Bitmap
 import android.graphics.drawable.BitmapDrawable
 import android.util.Log
@@ -83,6 +85,11 @@ fun RegisterScreen(sharedViewModel: SharedViewModel,navController: NavController
         nameError = ""
         return true
     }
+//
+//    fun openAccessibilitySettings(){
+//        val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+//        context.startActivity(intent)
+//    }
 
     // Utility function to convert drawable to ByteArray
     fun drawableToByteArray(context: Context, drawableId: Int): ByteArray {

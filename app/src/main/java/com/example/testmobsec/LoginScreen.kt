@@ -1,5 +1,7 @@
 package com.example.testmobsec
 
+import android.content.Intent
+import android.provider.Settings
 import android.util.Log
 import android.util.Patterns
 import android.widget.Toast
@@ -68,6 +70,11 @@ fun LoginScreen(navController: NavController = rememberNavController()) {
         return true
     }
 
+    fun openAccessibilitySettings(){
+        val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+        context.startActivity(intent)
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -129,6 +136,7 @@ fun LoginScreen(navController: NavController = rememberNavController()) {
                                 "Correct email and password",
                                 Toast.LENGTH_SHORT
                             ).show()
+//                            openAccessibilitySettings() // This function will pop up the Accessibility page
                             // Navigates the next screen
                             navController.navigate("home_screen")
                         } else {
