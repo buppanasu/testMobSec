@@ -1,6 +1,7 @@
 package com.example.testmobsec
 
 import android.util.Log
+import android.util.Patterns
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -48,11 +49,47 @@ fun RegisterScreen(sharedViewModel: SharedViewModel,navController: NavController
     // State to track the selected role
     var selectedRole by remember { mutableStateOf(UserRole.USER) }
 
+    // Input Validation Variables
+    var emailError: String by remember { mutableStateOf("") }
+    var nameError: String by remember { mutableStateOf("") }
+    var passwordError: String by remember { mutableStateOf("") }
 
 
     val context = LocalContext.current
 
+    // Validation Functions
+    fun validateEmail(): Boolean {
+        if (email.isEmpty()) {
+            emailError = "Email cannot be empty"
+            return false
+        } else if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            emailError = "Invalid email format"
+            return false
+        }
+        emailError = ""
+        return true
+    }
 
+    fun validateName(): Boolean {
+        if (name.isEmpty()) {
+            nameError = "Name cannot be empty"
+            return false
+        }
+        nameError = ""
+        return true
+    }
+
+    fun validatePassword(): Boolean {
+        if (password.isEmpty()) {
+            passwordError = "Password cannot be empty"
+            return false
+        } else if (password.length < 6) {
+            passwordError = "Password must be at least 6 characters"
+            return false
+        }
+        passwordError = ""
+        return true
+    }
 
         //This column is for filling up of input
         Column(modifier = Modifier.fillMaxSize().padding(50.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally){
@@ -61,30 +98,56 @@ fun RegisterScreen(sharedViewModel: SharedViewModel,navController: NavController
                 contentDescription = ""
             )
             Spacer(modifier = Modifier.height(10.dp))
+
             TextField(
                 value = name,
-                onValueChange = {name = it} ,
+                onValueChange = { name = it },
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text(text = "Username") }
+                placeholder = { Text(text = "Username") },
+                isError = nameError.isNotEmpty(), // Highlight the text field if there's an error
+                label = {
+                    // This logic ensures the label "Username" remains unless there's an error
+                    if (nameError.isNotEmpty()) {
+                        Text(nameError)
+                    } else {
+                        Text("Username")
+                    }
+                }
             )
+
             Spacer(modifier = Modifier.height(10.dp))
             TextField(
                 value = email,
-                onValueChange = {email = it} ,
+                onValueChange = { email = it },
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text(text = "Email") }
+                placeholder = { Text(text = "Email") },
+                isError = emailError.isNotEmpty(),
+                label = {
+                    if (emailError.isNotEmpty()) {
+                        Text(emailError)
+                    } else {
+                        Text("Email")
+                    }
+                }
             )
+
             Spacer(modifier = Modifier.height(10.dp))
             TextField(
                 value = password,
-                onValueChange = {password = it} ,
+                onValueChange = { password = it },
                 modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text(text = "Password") }
+                placeholder = { Text(text = "Password") },
+                isError = passwordError.isNotEmpty(),
+                label = {
+                    if (passwordError.isNotEmpty()) {
+                        Text(passwordError)
+                    } else {
+                        Text("Password")
+                    }
+                }
             )
-            Spacer(modifier = Modifier.height(10.dp))
 
             Spacer(modifier = Modifier.height(10.dp))
-
             // Radio button for user
             Row {
                 Text(text = "Signup as:", fontSize = 15.sp, modifier = Modifier.paddingFromBaseline(top = 28.dp))
@@ -101,50 +164,49 @@ fun RegisterScreen(sharedViewModel: SharedViewModel,navController: NavController
                 Text("Event Manager", modifier = Modifier.paddingFromBaseline(top = 28.dp))
             }
 
-            Button( onClick = {
-                val userData = UserData(
-                    name = name,
-                    email = email,
-                    role = selectedRole
-                )
+            Button(onClick = {
+                var isValid = true // Assuming inputs are valid initially
 
-                FirebaseAuth.getInstance().createUserWithEmailAndPassword(email,password)
-                    .addOnCompleteListener { task ->
-                        if (task.isSuccessful){
+                // Perform validation checks
+                if (!validateEmail()) isValid = false
+                if (!validateName()) isValid = false
+                if (!validatePassword()) isValid = false
 
-                            //User created successfully, store additional data in Firestore
-                            val userId = task.result.user!!.uid
-                            val userRef = FirebaseFirestore.getInstance().collection("users").document(userId)
-                            userRef.set(userData)
-                                .addOnSuccessListener{
-                                    //Store data successfully, handle success
-                                    sharedViewModel.saveData(userData = userData, context = context)
-                                    Toast.makeText(context, "Register Success!", Toast.LENGTH_SHORT).show()
-                                    navController.navigate("login_screen")
-                                }
-                                .addOnFailureListener{e ->
-                                    //Handle firestore error
-                                    Log.e("RegisterScreen","Error storing user data: $e")
-                                }
+                // Proceed if all inputs are valid
+                if (isValid) {
+                    // Firebase authentication and data storage logic
+                    FirebaseAuth.getInstance().createUserWithEmailAndPassword(email, password)
+                        .addOnCompleteListener { task ->
+                            if (task.isSuccessful) {
+                                // User created successfully, now store additional data
+                                val userId = task.result.user!!.uid
+                                val userData = UserData(name = name, email = email, role = selectedRole)
+                                FirebaseFirestore.getInstance().collection("users").document(userId).set(userData)
+                                    .addOnSuccessListener {
+                                        // Data stored successfully
+                                        sharedViewModel.saveData(userData = userData, context = context)
+                                        Toast.makeText(context, "Register Success!", Toast.LENGTH_SHORT).show()
+                                        navController.navigate("login_screen")
+                                    }
+                                    .addOnFailureListener { e ->
+                                        // Handle errors in storing user data
+                                        Log.e("RegisterScreen", "Error storing user data: $e")
+                                    }
+                            } else {
+                                // Handle authentication errors
+                                Log.e("RegisterScreen", "Error creating user: ${task.exception}")
+                            }
                         }
-                        else{
-                            //Handle authentication error
-                            Log.e("RegisterScreen", "error creating user: ${task.exception}")
-                        }
-                    }
-
-                //sharedViewModel.saveData(userData = userData, context = context)
-
+                } else {
+                    // Optionally, show a toast or log if validation fails
+                    Toast.makeText(context, "Please check your inputs", Toast.LENGTH_SHORT).show()
+                }
             }){
                 Text("Register")
             }
             Button( onClick = {navController.navigate("login_screen")}){
                 Text("Login Here")
             }
-
-
-
         }
-
 
 }

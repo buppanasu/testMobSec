@@ -1,6 +1,7 @@
 package com.example.testmobsec
 
 import android.util.Log
+import android.util.Patterns
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
@@ -39,8 +40,33 @@ fun LoginScreen(navController: NavController = rememberNavController()) {
     var email: String by remember { mutableStateOf("") }
     var password: String by remember { mutableStateOf("") }
 
+    // Input Validation Variables
+    var emailError: String by remember { mutableStateOf("") }
+    var passwordError: String by remember { mutableStateOf("") }
 
     val context = LocalContext.current
+
+    // Validation Functions
+    fun validateEmail(): Boolean {
+        if (email.isEmpty()) {
+            emailError = "Email cannot be empty"
+            return false
+        } else if (!Patterns.EMAIL_ADDRESS.matcher(email).matches()) {
+            emailError = "Invalid email format"
+            return false
+        }
+        emailError = "" // No error
+        return true
+    }
+
+    fun validatePassword(): Boolean {
+        if (password.isEmpty()) {
+            passwordError = "Password cannot be empty"
+            return false
+        }
+        passwordError = "" // No error
+        return true
+    }
 
     Column(
         modifier = Modifier
@@ -65,39 +91,59 @@ fun LoginScreen(navController: NavController = rememberNavController()) {
             value = email,
             onValueChange = { email = it },
             modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text(text = "Email") }
+            placeholder = { Text(text = "Email") },
+            isError = emailError.isNotEmpty(),
+            label = {
+                if (emailError.isNotEmpty()) Text(emailError) else Text("Email")
+            }
         )
         Spacer(modifier = Modifier.height(10.dp))
         TextField(
             value = password,
             onValueChange = { password = it },
             modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text(text = "Password") }
+            placeholder = { Text(text = "Password") },
+            isError = passwordError.isNotEmpty(),
+            label = {
+                if (passwordError.isNotEmpty()) Text(passwordError) else Text("Password")
+            }
         )
         Spacer(modifier = Modifier.height(10.dp))
         Button(onClick = {
+            var isValid = true
 
-            //Attempt to login using firebase authentication
-            FirebaseAuth.getInstance()
-                .signInWithEmailAndPassword(email, password)
-                .addOnCompleteListener { task ->
-                    if (task.isSuccessful) {
-                        //Login Successful, handle success
-                        val user = task.result.user!!
-                        Log.d("LoginScreen", "Logged in user: ${user.email}")
-                        Toast.makeText(context, "Correct email and password", Toast.LENGTH_SHORT)
-                            .show()
-                        navController.navigate("createband_screen")
-                    } else {
-                        //Login failed, handle error
-                        Log.e("LoginScreen", "Login Error: ${task.exception}")
-                        //Show an error message to the user
-                        Toast.makeText(context, "Invalid email or password", Toast.LENGTH_SHORT)
-                            .show()
+            if (!validateEmail()) isValid = false
+            if (!validatePassword()) isValid = false
+
+            if (isValid) {
+                //Attempt to login using firebase authentication
+                FirebaseAuth.getInstance()
+                    .signInWithEmailAndPassword(email, password)
+                    .addOnCompleteListener { task ->
+                        if (task.isSuccessful) {
+                            //Login Successful, handle success
+                            val user = task.result.user!!
+                            Log.d("LoginScreen", "Logged in user: ${user.email}")
+                            Toast.makeText(
+                                context,
+                                "Correct email and password",
+                                Toast.LENGTH_SHORT
+                            ).show()
+                            // Navigates the next screen
+                            navController.navigate("createband_screen")
+                        } else {
+                            //Login failed, handle error
+                            Log.e("LoginScreen", "Login Error: ${task.exception}")
+                            //Show an error message to the user
+                            Toast.makeText(context, "Invalid email or password", Toast.LENGTH_SHORT)
+                                .show()
+                        }
                     }
-                }
 
-
+            } else {
+                // If validation fails, show a toast message
+                Toast.makeText(context, "Please check your inputs", Toast.LENGTH_SHORT).show()
+            }
         }) {
             Text("Login")
         }
