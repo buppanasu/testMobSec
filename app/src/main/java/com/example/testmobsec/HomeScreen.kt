@@ -34,6 +34,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -80,11 +82,17 @@ fun HomePostsSection(postsViewModel: PostViewModel, profileViewModel:ProfileView
     postsViewModel.fetchPostsForHome()
     val profileImageUrls by profileViewModel.profileImageUrls.collectAsState()
 
+    val likesCountMap = remember { mutableStateMapOf<String, Int>() }
+    val userLikesMap = remember { mutableStateMapOf<String, Boolean>() }
 
     // Display posts in the first tab
     LazyColumn {
         items(posts) { postMap ->
             val userDocRef = postMap["userId"] as? DocumentReference
+            val postId = postMap["postId"] as String
+            val likesCountFlow = postsViewModel.getLikesCountFlow(postId)
+            val likesCount by likesCountFlow.collectAsState()
+
             val userId = userDocRef?.id.toString()
             LaunchedEffect(userId) {
                 profileViewModel.fetchProfileImageUrlByUserId(userId)
@@ -93,6 +101,7 @@ fun HomePostsSection(postsViewModel: PostViewModel, profileViewModel:ProfileView
             val content = postMap["content"] as? String ?: "No Content"
             val timestamp = postMap["timestamp"]
             val imageUrl = profileImageUrls[userId]
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -134,8 +143,14 @@ fun HomePostsSection(postsViewModel: PostViewModel, profileViewModel:ProfileView
                 IconButton(onClick = { /* Handle comment action */ }) {
                     Icon(Icons.Filled.Comment, contentDescription = "Comment")
                 }
-                IconButton(onClick = { /* Handle like action */ }) {
-                    Icon(Icons.Filled.ThumbUp, contentDescription = "Like")
+                val isLiked by postsViewModel.isPostLikedByUser(postId).collectAsState(initial = false)
+                val likeIconColor = if (isLiked) Color.Blue else Color.Gray
+                IconButton(onClick = { postsViewModel.toggleLike(postId) }) {
+                    Icon(Icons.Filled.ThumbUp, contentDescription = "Like", tint = likeIconColor)
+                }
+                // Conditional likes count text
+                if (likesCount > 0) {
+                    Text(text = "$likesCount")
                 }
             }
             Divider()
