@@ -1,10 +1,11 @@
 package com.example.testmobsec
 
-import PostScreen
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.navArgument
 import com.example.testmobsec.util.SharedViewModel
 
 
@@ -29,6 +30,12 @@ sealed class Screen(val route:String){
     data object EditProfileScreen: Screen(route = "edit_profile_screen")
 
     data object PostScreen: Screen(route = "post_screen")
+    data object CommentScreen: Screen(route = "comment_screen/{postId}"){
+    }
+
+    data object PostDetailsScreen: Screen(route = "postDetails_screen/{postId}"){
+
+    }
 }
 
 @Composable
@@ -96,6 +103,29 @@ fun NavGraph(
                 navController = navController
             )
         }
+        composable(
+            route = Screen.CommentScreen.route, // Use the updated route with argument
+            arguments = listOf(navArgument("postId") { type = NavType.StringType }) // Define the argument
+        ) { backStackEntry ->
+            // Extract the postId argument
+            val postId = backStackEntry.arguments?.getString("postId") ?: throw IllegalStateException("postId must be provided")
+
+            CommentScreen(
+                navController = navController,
+                postId = postId // Pass the postId to CommentScreen
+            )
+        }
+
+        composable(
+            route = Screen.PostDetailsScreen.route,
+            arguments = listOf(navArgument("postId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            // Extract postId
+            val postId = backStackEntry.arguments?.getString("postId") ?: throw IllegalStateException("postId must be provided")
+            PostDetailsScreen(navController = navController, postId)
+            // Implement your PostDetailsScreen composable, which shows the post details
+        }
+
 
     }
 }

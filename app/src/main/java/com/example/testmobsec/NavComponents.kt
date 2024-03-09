@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
@@ -52,17 +53,22 @@ fun BottomAppBarContent(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TopAppBarContent(navController: NavController) {
-    val currentRoute = getCurrentRoute(navController)
-    val title = when (currentRoute) {
-        "home_screen" -> "Home"
-        "profile_screen" -> "Profile"
-        "upload_screen" -> "Upload"
-        "practice_screen" -> "Practice"
-        "search_screen" -> "Search"
-        "edit_profile_screen" -> "Edit Profile Details"
-        "createorjoinband_screen" -> "TBC: Create or join Band"
-        "createband_screen" -> "TBC: Create Band"
-        "post_screen" -> "Post"
+    val currentBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = currentBackStackEntry?.destination?.route
+    val title = when{
+        currentRoute?.startsWith("home_screen") == true -> "Home"
+        currentRoute?.startsWith("profile_screen") == true -> "Profile"
+        currentRoute?.startsWith("post_screen") == true -> "Upload Post"
+        currentRoute?.startsWith("search_screen") == true -> "Search"
+        currentRoute?.startsWith("edit_profile_screen") == true -> "Edit Profile Details"
+        currentRoute?.startsWith("comment_screen") == true -> "Comments"
+        currentRoute?.startsWith("postDetails_screen") == true -> "Post Details"
+        currentRoute?.startsWith("createorjoinband_screen") == true -> "TBC: Create or join Band"
+        currentRoute?.startsWith("createband_screen") == true -> "TBC: Create Band"
+
+
+
+
         // Add more cases for other screens
         else -> "App"
     }
@@ -82,6 +88,7 @@ fun TopAppBarContent(navController: NavController) {
                     )
                 }
             }
+
         },
         actions = {
             if(currentRoute == "profile_screen") {
@@ -92,18 +99,25 @@ fun TopAppBarContent(navController: NavController) {
                         contentDescription = "Edit Profile Page"
                     )
                 }
-            }
-            else if(currentRoute == "edit_profile_screen"){
-                TextButton(onClick = { /* TODO save */ }) {
-                    Text("Save")
-                }
-            }
-            else{
-                IconButton(onClick = { navController.navigate("profile_screen") }) {
-                    Icon(
-                        imageVector = Icons.Filled.Person,
-                        contentDescription = "Profile Page"
-                    )
+            }else if (currentRoute != null) {
+                if(currentRoute.startsWith("comment_screen") || currentRoute.startsWith("post_screen") || currentRoute.startsWith("postDetails_screen")){
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(
+                            imageVector = Icons.Filled.Close,
+                            contentDescription = "Close"
+                        )
+                    }
+                } else if(currentRoute == "edit_profile_screen"){
+                    TextButton(onClick = { /* TODO save */ }) {
+                        Text("Save")
+                    }
+                } else{
+                    IconButton(onClick = { navController.navigate("profile_screen") }) {
+                        Icon(
+                            imageVector = Icons.Filled.Person,
+                            contentDescription = "Profile Page"
+                        )
+                    }
                 }
             }
 

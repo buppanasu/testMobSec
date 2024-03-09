@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -66,7 +67,7 @@ fun HomeScreen(navController: NavController = rememberNavController()) {
         Column(modifier = Modifier
             .fillMaxSize()
             .padding(paddingValues)) {
-            HomePostsSection(postsViewModel, profileViewModel)
+            HomePostsSection(postsViewModel, profileViewModel, navController)
 
 
         }
@@ -77,13 +78,12 @@ fun HomeScreen(navController: NavController = rememberNavController()) {
 
 
 @Composable
-fun HomePostsSection(postsViewModel: PostViewModel, profileViewModel:ProfileViewModel){
+fun HomePostsSection(postsViewModel: PostViewModel, profileViewModel:ProfileViewModel, navController: NavController){
     val posts by postsViewModel.posts.collectAsState(initial = emptyList())
     postsViewModel.fetchPostsForHome()
     val profileImageUrls by profileViewModel.profileImageUrls.collectAsState()
 
-    val likesCountMap = remember { mutableStateMapOf<String, Int>() }
-    val userLikesMap = remember { mutableStateMapOf<String, Boolean>() }
+
 
     // Display posts in the first tab
     LazyColumn {
@@ -92,6 +92,8 @@ fun HomePostsSection(postsViewModel: PostViewModel, profileViewModel:ProfileView
             val postId = postMap["postId"] as String
             val likesCountFlow = postsViewModel.getLikesCountFlow(postId)
             val likesCount by likesCountFlow.collectAsState()
+            val commentsCountFlow = postsViewModel.getCommentsCountFlow(postId)
+            val commentsCount by commentsCountFlow.collectAsState()
 
             val userId = userDocRef?.id.toString()
             LaunchedEffect(userId) {
@@ -105,7 +107,10 @@ fun HomePostsSection(postsViewModel: PostViewModel, profileViewModel:ProfileView
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(8.dp),
+                    .padding(8.dp)
+                    .clickable{
+                        navController.navigate("postDetails_screen/$postId")
+        },
                 verticalAlignment = Alignment.CenterVertically
             ) {
 //                Log.d("PROFILE SECTION", imageUrl)
@@ -140,9 +145,18 @@ fun HomePostsSection(postsViewModel: PostViewModel, profileViewModel:ProfileView
                     Spacer(modifier = Modifier.height(4.dp))
 
                 }
-                IconButton(onClick = { /* Handle comment action */ }) {
-                    Icon(Icons.Filled.Comment, contentDescription = "Comment")
+
+                val hasCommented by postsViewModel.hasUserCommented(postId).collectAsState(
+                    initial = false
+                )
+                val commentedIconColor = if(hasCommented) Color.Magenta else Color.Gray
+                IconButton(onClick = { navController.navigate("comment_screen/$postId") }) {
+                    Icon(Icons.Filled.Comment, contentDescription = "Comment", tint = commentedIconColor)
                 }
+                if (commentsCount > 0) {
+                    Text(text = "$commentsCount")
+                }
+
                 val isLiked by postsViewModel.isPostLikedByUser(postId).collectAsState(initial = false)
                 val likeIconColor = if (isLiked) Color.Blue else Color.Gray
                 IconButton(onClick = { postsViewModel.toggleLike(postId) }) {

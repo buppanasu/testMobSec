@@ -35,20 +35,21 @@ import java.util.Locale
 
 @OptIn(ExperimentalComposeUiApi::class)
 @Composable
-fun PostScreen(
+fun CommentScreen(
     navController: NavController = rememberNavController(),
-
+    postId: String
     ) {
     val profileViewModel: ProfileViewModel = viewModel()
     val postViewModel: PostViewModel = viewModel()
     val context = LocalContext.current
     val focusRequester = remember { FocusRequester() }
     val keyboardController = LocalSoftwareKeyboardController.current
-    var postText by remember { mutableStateOf("") }
+    var commentText by remember { mutableStateOf("") }
     val profileImageUrl by profileViewModel.profileImageUrl.collectAsState()
 
     Scaffold(
         topBar = { TopAppBarContent(navController = navController) },
+        // BottomBar or FloatingActionButton can be added here if needed
     ) { paddingValues ->
         LaunchedEffect(Unit) {
             focusRequester.requestFocus()
@@ -69,8 +70,8 @@ fun PostScreen(
                     )
                 }  ?: Text("No profile image available")
                 BasicTextField(
-                    value = postText,
-                    onValueChange = { postText = it },
+                    value = commentText,
+                    onValueChange = { commentText = it },
                     modifier = Modifier
                         .padding(paddingValues) // Apply padding from Scaffold
                         .fillMaxSize() // Fill the available space considering padding
@@ -86,21 +87,18 @@ fun PostScreen(
             Spacer(modifier = Modifier.height(8.dp))
             Button(
                 onClick = {
-                    postViewModel.uploadPost(
-                        content = postText,
-                        context = context,
-                        onSuccess = {
-                            Toast.makeText(context, "Post created successfully", Toast.LENGTH_SHORT).show()
-                            navController.navigate("profile_screen")
-                        },
-                        onFailure = { exception ->
-                            Toast.makeText(context, "Failed to post: ${exception.localizedMessage}", Toast.LENGTH_LONG).show()
-                        }
-                    )
+                    if(commentText.isNotBlank()) { // Check to ensure the comment is not empty
+                        postViewModel.addCommentToPost(postId, commentText)
+                        keyboardController?.hide() // Optionally hide the keyboard
+                        navController.popBackStack() // Navigate back after commenting
+                    } else {
+                        Toast.makeText(context, "Comment cannot be empty", Toast.LENGTH_SHORT).show()
+                    }
+
                 },
                 modifier = Modifier.align(Alignment.CenterHorizontally)
             ) {
-                Text(text = "Post")
+                Text(text = "Comment")
             }
         }
     }
@@ -108,8 +106,8 @@ fun PostScreen(
 
 
 
-@Preview(showBackground = true)
-@Composable
-fun PreviewPostScreen() {
-    PostScreen()
-}
+//@Preview(showBackground = true)
+//@Composable
+//fun PreviewCommentScreen() {
+//    CommentScreen()
+//}

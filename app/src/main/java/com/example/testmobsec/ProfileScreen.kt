@@ -93,7 +93,7 @@ fun ProfileScreen(
            ProfileTopSection(navController,profileViewModel)
             TabRowSection(selectedTab = selectedTab, onTabSelected = { tab ->
                 selectedTab = tab
-            }, postsViewModel = postsViewModel, profileViewModel)
+            }, postsViewModel = postsViewModel, profileViewModel, navController)
 
 
         }
@@ -104,7 +104,8 @@ fun ProfileScreen(
 }
 @Composable
 fun TabRowSection(selectedTab: Int, onTabSelected: (Int) -> Unit,
-                  postsViewModel: PostViewModel,profileViewModel: ProfileViewModel){
+                  postsViewModel: PostViewModel,profileViewModel: ProfileViewModel
+,navController: NavController){
     // Observe the posts list from the ViewModel
     val posts by postsViewModel.posts.collectAsState(initial = emptyList())
     TabRow(selectedTabIndex = selectedTab) {
@@ -121,24 +122,16 @@ fun TabRowSection(selectedTab: Int, onTabSelected: (Int) -> Unit,
         Tab(
             selected = selectedTab == 1,
             onClick = { onTabSelected(1) },
-            text = { Text("Tweets & Replies") }
+            text = { Text("Comments") }
         )
+
         Tab(
             selected = selectedTab == 2,
             onClick = { onTabSelected(2) },
-            text = { Text("Media") }
-        )
-        Tab(
-            selected = selectedTab == 3,
-            onClick = { onTabSelected(3) },
             text = { Text("Likes") }
         )
     }
-    // Content below tabs
-    // This is a placeholder, replace it with your content based on the selected tab
-//    Box(modifier = Modifier
-////        .fillMaxSize()
-//        )
+
     if (selectedTab == 0) {
         postsViewModel.fetchPostsForUser()
     }
@@ -158,6 +151,8 @@ fun TabRowSection(selectedTab: Int, onTabSelected: (Int) -> Unit,
                     val isLiked by postsViewModel.isPostLikedByUser(postId).collectAsState(initial = false)
                     val likesCountFlow = postsViewModel.getLikesCountFlow(postId)
                     val likesCount by likesCountFlow.collectAsState()
+                    val commentsCountFlow = postsViewModel.getCommentsCountFlow(postId)
+                    val commentsCount by commentsCountFlow.collectAsState()
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -170,7 +165,7 @@ fun TabRowSection(selectedTab: Int, onTabSelected: (Int) -> Unit,
                                 painter = rememberAsyncImagePainter(url),
                                 contentDescription = "",
                                 modifier = Modifier
-                                    .size(100.dp)
+                                    .size(40.dp)
                                     .clip(CircleShape)
                                     .border(1.5.dp, MaterialTheme.colorScheme.primary, CircleShape)
                             )
@@ -188,9 +183,17 @@ fun TabRowSection(selectedTab: Int, onTabSelected: (Int) -> Unit,
                             Text(text = content, style = TextStyle(fontSize = 14.sp))
                             Text(text = formatDate(timestamp), style = TextStyle(fontSize = 12.sp))
                             Spacer(modifier = Modifier.height(4.dp))
-                            IconButton(onClick = { /* Handle comment action */ }) {
-                                Icon(Icons.Filled.Comment, contentDescription = "Comment")
-                            }
+
+                        }
+                        val hasCommented by postsViewModel.hasUserCommented(postId).collectAsState(
+                            initial = false
+                        )
+                        val commentedIconColor = if(hasCommented) Color.Magenta else Color.Gray
+                        IconButton(onClick = { navController.navigate("comment_screen/$postId") }) {
+                            Icon(Icons.Filled.Comment, contentDescription = "Comment", tint = commentedIconColor)
+                        }
+                        if (commentsCount > 0) {
+                            Text(text = "$commentsCount")
                         }
 
                         // Like button with real-time color change based on like status
@@ -209,19 +212,12 @@ fun TabRowSection(selectedTab: Int, onTabSelected: (Int) -> Unit,
             }
         }
         1 -> {
-            Text("Test")
-            // Content for the second tab
-        }
-
-        3->{
-            postsViewModel.fetchLikedPosts()
-            val likedPosts by postsViewModel.likedPosts.collectAsState()
-//            val profileImageUrl by profileViewModel.profileImageUrl.collectAsState()
+            postsViewModel.fetchCommentedPosts()
+            val commentedPosts by postsViewModel.commentedPosts.collectAsState()
             val profileImageUrls by profileViewModel.profileImageUrls.collectAsState()
-
             // Display posts in the first tab
             LazyColumn {
-                items(likedPosts) { postMap ->
+                items(commentedPosts) { postMap ->
                     val name = postMap["userName"] as? String?: "No Content"
                     val content = postMap["content"] as? String ?: "No Content"
                     val timestamp = postMap["timestamp"]
@@ -231,6 +227,8 @@ fun TabRowSection(selectedTab: Int, onTabSelected: (Int) -> Unit,
                     val likesCount by likesCountFlow.collectAsState()
                     val userDocRef = postMap["userId"] as? DocumentReference
                     val userId = userDocRef?.id.toString()
+                    val commentsCountFlow = postsViewModel.getCommentsCountFlow(postId)
+                    val commentsCount by commentsCountFlow.collectAsState()
                     LaunchedEffect(userId) {
                         profileViewModel.fetchProfileImageUrlByUserId(userId)
                     }
@@ -246,7 +244,7 @@ fun TabRowSection(selectedTab: Int, onTabSelected: (Int) -> Unit,
                             painter = rememberAsyncImagePainter(imageUrl),
                             contentDescription = "",
                             modifier = Modifier
-                                .size(100.dp)
+                                .size(40.dp)
                                 .clip(CircleShape)
                                 .border(1.5.dp, MaterialTheme.colorScheme.primary, CircleShape)
                         ) ?: Text("No profile image available")
@@ -263,9 +261,100 @@ fun TabRowSection(selectedTab: Int, onTabSelected: (Int) -> Unit,
                             Text(text = content, style = TextStyle(fontSize = 14.sp))
                             Text(text = formatDate(timestamp), style = TextStyle(fontSize = 12.sp))
                             Spacer(modifier = Modifier.height(4.dp))
-                            IconButton(onClick = { /* Handle comment action */ }) {
-                                Icon(Icons.Filled.Comment, contentDescription = "Comment")
-                            }
+
+                        }
+                        val hasCommented by postsViewModel.hasUserCommented(postId).collectAsState(
+                            initial = false
+                        )
+                        val commentedIconColor = if(hasCommented) Color.Magenta else Color.Gray
+                        IconButton(onClick = { navController.navigate("comment_screen/$postId") }) {
+                            Icon(Icons.Filled.Comment, contentDescription = "Comment", tint = commentedIconColor)
+                        }
+                        if (commentsCount > 0) {
+                            Text(text = "$commentsCount")
+                        }
+
+                        // Like button with real-time color change based on like status
+                        val likeIconColor = if (isLiked) Color.Blue else Color.Gray
+                        IconButton(onClick = { postsViewModel.toggleLike(postId) }) {
+                            Icon(Icons.Filled.ThumbUp, contentDescription = "Like", tint = likeIconColor)
+                        }
+
+                        // Display likes count, updating in real-time
+                        if (likesCount > 0) {
+                            Text(text = "$likesCount")
+                        }
+                    }
+                    Divider()
+                }
+            }
+        }
+
+        2->{
+            postsViewModel.fetchLikedPosts()
+            val likedPosts by postsViewModel.likedPosts.collectAsState()
+//            val profileImageUrl by profileViewModel.profileImageUrl.collectAsState()
+            val profileImageUrls by profileViewModel.profileImageUrls.collectAsState()
+
+
+            // Display posts in the first tab
+            LazyColumn {
+                items(likedPosts) { postMap ->
+                    val name = postMap["userName"] as? String?: "No Content"
+                    val content = postMap["content"] as? String ?: "No Content"
+                    val timestamp = postMap["timestamp"]
+                    val postId = postMap["postId"] as String
+                    val isLiked by postsViewModel.isPostLikedByUser(postId).collectAsState(initial = false)
+                    val likesCountFlow = postsViewModel.getLikesCountFlow(postId)
+                    val likesCount by likesCountFlow.collectAsState()
+                    val userDocRef = postMap["userId"] as? DocumentReference
+                    val userId = userDocRef?.id.toString()
+                    val commentsCountFlow = postsViewModel.getCommentsCountFlow(postId)
+                    val commentsCount by commentsCountFlow.collectAsState()
+                    LaunchedEffect(userId) {
+                        profileViewModel.fetchProfileImageUrlByUserId(userId)
+                    }
+                    val imageUrl = profileImageUrls[userId]
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Spacer(modifier = Modifier.width(35.dp))
+                        Image(
+                            painter = rememberAsyncImagePainter(imageUrl),
+                            contentDescription = "",
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .border(1.5.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                        ) ?: Text("No profile image available")
+                        Spacer(modifier = Modifier.width(20.dp))
+                        Column(
+                            modifier = Modifier
+                                .weight(1f)
+                                .padding(8.dp)
+                        ) {
+                            Text(text = name, fontWeight = FontWeight.Bold,
+                                style = TextStyle(fontSize = 18.sp)
+                            )
+                            Divider()
+                            Text(text = content, style = TextStyle(fontSize = 14.sp))
+                            Text(text = formatDate(timestamp), style = TextStyle(fontSize = 12.sp))
+                            Spacer(modifier = Modifier.height(4.dp))
+
+                        }
+
+                        val hasCommented by postsViewModel.hasUserCommented(postId).collectAsState(
+                            initial = false
+                        )
+                        val commentedIconColor = if(hasCommented) Color.Magenta else Color.Gray
+                        IconButton(onClick = { navController.navigate("comment_screen/$postId") }) {
+                            Icon(Icons.Filled.Comment, contentDescription = "Comment", tint = commentedIconColor)
+                        }
+                        if (commentsCount > 0) {
+                            Text(text = "$commentsCount")
                         }
 
                         // Like button with real-time color change based on like status

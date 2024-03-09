@@ -30,7 +30,7 @@ class PostViewModel: ViewModel() {
     private val _posts = MutableStateFlow<List<Map<String, Any>>>(emptyList())
     val posts: StateFlow<List<Map<String, Any>>> = _posts
     val likedPosts = MutableStateFlow<List<Map<String, Any>>>(emptyList())
-
+    val commentedPosts = MutableStateFlow<List<Map<String, Any>>>(emptyList())
     fun fetchPostsForHome(){
         viewModelScope.launch{
             try {
@@ -83,6 +83,33 @@ class PostViewModel: ViewModel() {
         }
 
     }
+
+    fun fetchCommentedPosts() {
+        viewModelScope.launch {
+            val commentPostIds = db.collection("comments")
+                .whereEqualTo("userId", userId?.let { db.collection("users").document(it) })
+                .get()
+                .await()
+                .documents
+                .mapNotNull { it["postId"] as? DocumentReference } // Assuming postId is stored as a DocumentReference
+
+            val postsWithUserNames = commentPostIds.mapNotNull { postIdRef ->
+                val postSnapshot = postIdRef.get().await()
+                if (!postSnapshot.exists()) return@mapNotNull null
+                val postData = postSnapshot.data?.plus("postId" to postIdRef.id) ?: return@mapNotNull null
+
+                // Fetch the user's name based on userId in postData
+                val userRef = postData["userId"] as? DocumentReference
+                val userSnapshot = userRef?.get()?.await()
+                val userName = userSnapshot?.getString("name") ?: "Unknown User"
+
+                // Add the userName to postData
+                postData.plus("userName" to userName)
+            }.sortedByDescending { it["timestamp"] as? Timestamp } // Sort by timestamp descending
+
+            commentedPosts.value = postsWithUserNames
+        }
+    }
     fun fetchLikedPosts() {
         viewModelScope.launch {
             val likedPostIds = db.collection("likes")
@@ -121,9 +148,21 @@ class PostViewModel: ViewModel() {
         emit(querySnapshot.documents.isNotEmpty())
     }.flowOn(Dispatchers.IO)
 
+    fun hasUserCommented(postId: String): Flow<Boolean> = flow {
+
+        val commentsCollection = db.collection("comments")
+        val querySnapshot = commentsCollection
+            .whereEqualTo("postId", db.collection("posts").document(postId))
+            .whereEqualTo("userId", userId?.let { db.collection("users").document(it) })
+            .get()
+            .await()
+
+        emit(querySnapshot.documents.isNotEmpty())
+    }.flowOn(Dispatchers.IO)
+
     // A map to hold the MutableStateFlows for likes count, keyed by postId
     private val likesCounts = mutableMapOf<String, MutableStateFlow<Int>>()
-
+    private val commentCounts = mutableMapOf<String, MutableStateFlow<Int>>()
     fun getLikesCountFlow(postId: String): MutableStateFlow<Int> {
         // Return an existing flow if one already exists for this postId
         if (likesCounts.containsKey(postId)) {
@@ -151,6 +190,33 @@ class PostViewModel: ViewModel() {
         return newLikesCountFlow
     }
 
+    fun getCommentsCountFlow(postId: String): MutableStateFlow<Int> {
+        // Return an existing flow if one already exists for this postId
+        if (commentCounts.containsKey(postId)) {
+            return commentCounts[postId]!!
+        }
+
+        // Otherwise, create a new MutableStateFlow for this postId, initialize it with 0
+        val newCommentsCountFlow = MutableStateFlow(0)
+        commentCounts[postId] = newCommentsCountFlow
+
+        // Set up a snapshot listener for this postId
+        db.collection("comments")
+            .whereEqualTo("postId", db.collection("posts").document(postId))
+            .addSnapshotListener { snapshot, e ->
+                if (e != null) {
+                    Log.w("PostViewModel", "Listen failed.", e)
+                    return@addSnapshotListener
+                }
+
+                val commentsCount = snapshot?.size() ?: 0
+                // Update the MutableStateFlow with the new count
+                newCommentsCountFlow.value = commentsCount
+            }
+
+        return newCommentsCountFlow
+    }
+
     fun toggleLike(postId: String) {
         viewModelScope.launch {
             val likesCollection = db.collection("likes")
@@ -175,37 +241,7 @@ class PostViewModel: ViewModel() {
         }
     }
 
-    fun fetchLikesCountForPost(postId: String): Flow<Int> = flow {
-        try {
-            val likesCount = db.collection("likes")
-                .whereEqualTo("postId", db.collection("posts").document(postId))
-                .get()
-                .await()
-                .size()
-            emit(likesCount)
-        } catch (e: Exception) {
-            Log.e("PostViewModel", "Error fetching likes count", e)
-            emit(0) // Emit 0 if there's an error
-        }
-    }.flowOn(Dispatchers.IO)
 
-
-    fun likePost(postId: String, userId: String) {
-        viewModelScope.launch {
-            val likeMap = hashMapOf(
-                "postId" to db.collection("posts").document(postId),
-                "userId" to db.collection("users").document(userId),
-                "timestamp" to FieldValue.serverTimestamp()
-            )
-
-            try {
-                db.collection("likes").add(likeMap).await()
-                Log.d("PostViewModel", "Like added successfully")
-            } catch (e: Exception) {
-                Log.e("PostViewModel", "Error adding like", e)
-            }
-        }
-    }
 
 
     fun fetchPostsForUser() {
@@ -256,6 +292,21 @@ class PostViewModel: ViewModel() {
             }
         }
     }
+
+    fun addCommentToPost(postId: String, commentText: String) {
+
+        val commentData = hashMapOf(
+            "userId" to FirebaseFirestore.getInstance().document("users/$userId"),
+            "postId" to FirebaseFirestore.getInstance().document("posts/$postId"),
+            "timestamp" to FieldValue.serverTimestamp(),
+            "comment" to commentText
+        )
+
+        FirebaseFirestore.getInstance().collection("comments").add(commentData)
+            .addOnSuccessListener { Log.d("PostViewModel", "Comment added with ID: ${it.id}") }
+            .addOnFailureListener { e -> Log.w("PostViewModel", "Error adding comment", e) }
+    }
+
 
     fun uploadPost(
         content: String,
