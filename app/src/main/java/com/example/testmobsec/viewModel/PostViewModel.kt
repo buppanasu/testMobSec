@@ -16,6 +16,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
@@ -29,8 +30,19 @@ class PostViewModel: ViewModel() {
     private val userId = auth.currentUser?.uid
     private val _posts = MutableStateFlow<List<Map<String, Any>>>(emptyList())
     val posts: StateFlow<List<Map<String, Any>>> = _posts
+
+    private val _comments = MutableStateFlow<List<Map<String, Any>>>(emptyList())
+    val comments: StateFlow<List<Map<String, Any>>> = _comments
     val likedPosts = MutableStateFlow<List<Map<String, Any>>>(emptyList())
     val commentedPosts = MutableStateFlow<List<Map<String, Any>>>(emptyList())
+    // A map to hold the MutableStateFlows for likes count, keyed by postId
+    private val likesCounts = mutableMapOf<String, MutableStateFlow<Int>>()
+    private val commentCounts = mutableMapOf<String, MutableStateFlow<Int>>()
+    private val _postsCount = MutableStateFlow(0)
+    val postsCount = _postsCount.asStateFlow()
+
+    private val _selectedPostDetails = MutableStateFlow<Map<String, Any>?>(null)
+    val selectedPostDetails = _selectedPostDetails.asStateFlow()
     fun fetchPostsForHome(){
         viewModelScope.launch{
             try {
@@ -84,10 +96,85 @@ class PostViewModel: ViewModel() {
 
     }
 
-    fun fetchCommentedPosts() {
+    fun fetchPostsFromFollowing() {
         viewModelScope.launch {
+            try {
+                val currentUserDocRef = userId?.let { db.collection("users").document(it) } ?: return@launch
+                val currentUserDoc = currentUserDocRef.get().await()
+                val followingRefs = currentUserDoc.get("following") as? List<DocumentReference> ?: listOf()
+
+                val postsWithUserNames = mutableListOf<Map<String, Any>>()
+
+                // Process in chunks due to Firestore's limitations
+                followingRefs.chunked(10).forEach { chunk ->
+                    // Construct a list of tasks to fetch posts for each chunk
+                    val tasks = chunk.map { userRef ->
+                        db.collection("posts")
+                            .whereEqualTo("userId", userRef)
+                            .orderBy("timestamp", Query.Direction.DESCENDING)
+                            .get()
+                    }
+
+                    // Await all tasks and process results
+                    tasks.forEach { task ->
+                        val postsQuerySnapshot = task.await()
+                        for (document in postsQuerySnapshot.documents) {
+                            val postData = document.data as? MutableMap<String, Any> ?: continue
+                            postData["postId"] = document.id
+
+                            val userDoc = (postData["userId"] as? DocumentReference)?.get()?.await()
+                            val userName = userDoc?.getString("name") ?: "Unknown User"
+
+                            // Add the user's name to the post data
+                            postData["userName"] = userName
+
+                            // Add the modified post data to the list
+                            postsWithUserNames.add(postData)
+                        }
+                    }
+                }
+
+                // Update LiveData or StateFlow with the new posts
+                _posts.value = postsWithUserNames
+            } catch (e: Exception) {
+                Log.e("ViewModel", "Error fetching posts from following", e)
+                _posts.value = emptyList()
+            }
+        }
+    }
+
+
+
+
+    fun fetchPostsCountForCurrentUser(userIdParam: String? = null) {
+
+        // Use the provided userId if available, or fall back to the current user's ID
+        val userId = userIdParam ?: FirebaseAuth.getInstance().currentUser?.uid ?: return
+
+        // Directly use the userId to query the posts collection
+        viewModelScope.launch {
+            FirebaseFirestore.getInstance().collection("posts")
+                .whereEqualTo("userId", FirebaseFirestore.getInstance().collection("users").document(userId))
+                .get()
+                .addOnSuccessListener { querySnapshot ->
+                    // Update the posts count
+                    _postsCount.value = querySnapshot.size()
+                }
+                .addOnFailureListener { exception ->
+                    // Handle any errors
+                    println("Error getting posts count: $exception")
+                    _postsCount.value = 0 // Optionally reset the count or handle the error as needed
+                }
+        }
+    }
+
+    fun fetchCommentedPosts(userIdParam: String? = null) {
+        viewModelScope.launch {
+            val userDocumentRef = userIdParam?.let { db.collection("users").document(it) }
+                ?: userId?.let { db.collection("users").document(it) }
+                ?: return@launch  // Return if no userId is found
             val commentPostIds = db.collection("comments")
-                .whereEqualTo("userId", userId?.let { db.collection("users").document(it) })
+                .whereEqualTo("userId",userDocumentRef)
                 .get()
                 .await()
                 .documents
@@ -110,10 +197,13 @@ class PostViewModel: ViewModel() {
             commentedPosts.value = postsWithUserNames
         }
     }
-    fun fetchLikedPosts() {
+    fun fetchLikedPosts(userIdParam: String? = null) {
         viewModelScope.launch {
+            val userDocumentRef = userIdParam?.let { db.collection("users").document(it) }
+                ?: userId?.let { db.collection("users").document(it) }
+                ?: return@launch  // Return if no userId is found
             val likedPostIds = db.collection("likes")
-                .whereEqualTo("userId", userId?.let { db.collection("users").document(it) })
+                .whereEqualTo("userId", userDocumentRef)
                 .get()
                 .await()
                 .documents
@@ -160,9 +250,7 @@ class PostViewModel: ViewModel() {
         emit(querySnapshot.documents.isNotEmpty())
     }.flowOn(Dispatchers.IO)
 
-    // A map to hold the MutableStateFlows for likes count, keyed by postId
-    private val likesCounts = mutableMapOf<String, MutableStateFlow<Int>>()
-    private val commentCounts = mutableMapOf<String, MutableStateFlow<Int>>()
+
     fun getLikesCountFlow(postId: String): MutableStateFlow<Int> {
         // Return an existing flow if one already exists for this postId
         if (likesCounts.containsKey(postId)) {
@@ -240,16 +328,106 @@ class PostViewModel: ViewModel() {
             }
         }
     }
+    fun fetchPostByPostId(postId: String) {
+        viewModelScope.launch {
+            try {
+                // Fetch the post document by its postId
+                val postSnapshot = db.collection("posts").document(postId).get().await()
+
+                if (!postSnapshot.exists()) {
+                    Log.d("PostViewModel", "No post found for postId: $postId")
+                    _selectedPostDetails.value = null // Assuming you have a similar MutableStateFlow for storing post details
+                    return@launch
+                }
+
+                // Assuming the post data structure includes a userId field that is a DocumentReference
+                val postData = postSnapshot.data as MutableMap<String, Any> // Make sure to safely cast and handle potential null
+                val userIdRef = postData["userId"] as? DocumentReference
+
+                if (userIdRef != null) {
+                    // Fetch the user document based on the userId reference
+                    val userSnapshot = userIdRef.get().await()
+                    val userName = userSnapshot.getString("name") ?: "Unknown User"
+
+                    // Add the user's name to the post data
+                    postData["userName"] = userName
+
+                    // Update the MutableStateFlow with the modified post data
+                    _selectedPostDetails.value = postData
+                } else {
+                    Log.d("PostViewModel", "UserId reference missing in post data for postId: $postId")
+                    _selectedPostDetails.value = postData // Store the post data even if the username cannot be fetched
+                }
+            } catch (e: Exception) {
+                // Handle error
+                Log.e("PostViewModel", "Error fetching post details: ", e)
+                _selectedPostDetails.value = null
+            }
+        }
+    }
 
 
-
-
-    fun fetchPostsForUser() {
+    fun fetchCommentsForPost(postId: String){
         viewModelScope.launch {
             try {
                 // Query the posts collection for documents where the userId field matches the userRef
+                val result: QuerySnapshot = db.collection("comments")
+                    .whereEqualTo("postId", db.collection("posts").document(postId))
+                    .orderBy("timestamp", Query.Direction.DESCENDING)
+                    .get()
+                    .await()
+
+                if (result.isEmpty) {
+                    Log.d("PostViewModel", "No comments found for user")
+                } else {
+                    Log.d("PostViewModel", "Fetched ${result.size()} comments for user")
+                }
+
+                // Initialize an empty list to hold the posts with user names
+                val commentsWithUserNames = mutableListOf<Map<String, Any>>()
+
+                // Iterate through each document in the result
+                for (document in result.documents) {
+                    val commentData = document.data as MutableMap<String, Any>
+//                    commentData["postId"] = document.id
+                    // Get the user reference from the post
+                    val userRef = commentData["userId"] as DocumentReference
+
+
+                    // Fetch the user document based on the reference
+                    val userDoc = userRef.get().await()
+
+                    // Retrieve the user's name from the user document
+                    val userName = userDoc.getString("name") ?: "Unknown User"
+
+                    // Add the user's name to the post data
+                    commentData["userName"] = userName
+
+
+                    // Add the modified post data to the list
+                    commentsWithUserNames.add(commentData)
+                }
+
+                // Update the MutableStateFlow with the modified list of posts
+                _comments.value = commentsWithUserNames
+            } catch (e: Exception) {
+                // Handle error
+                Log.e("PostViewModel", "Error fetching comments with user names", e)
+                _comments.value = emptyList()
+            }
+        }
+
+    }
+
+
+
+    fun fetchPostsForUser(userIdParam: String? = null) {
+        viewModelScope.launch {
+            try {
+                val userIdToUse = userIdParam ?: FirebaseAuth.getInstance().currentUser?.uid ?: return@launch
+                // Query the posts collection for documents where the userId field matches the userRef
                 val result: QuerySnapshot = db.collection("posts")
-                    .whereEqualTo("userId", userId?.let { db.collection("users").document(it) })
+                    .whereEqualTo("userId", userId?.let { db.collection("users").document(userIdToUse) })
                     .orderBy("timestamp", Query.Direction.DESCENDING)
                     .get()
                     .await()

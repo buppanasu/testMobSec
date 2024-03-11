@@ -6,7 +6,6 @@ import android.net.Uri
 import android.util.Log
 import android.widget.Toast
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
@@ -23,10 +22,9 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
-import javax.inject.Inject
-import androidx.compose.runtime.State
-import androidx.lifecycle.asLiveData
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.firestore.DocumentReference
+import com.google.firebase.firestore.FieldValue
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.tasks.await
 
@@ -46,6 +44,22 @@ class ProfileViewModel() : ViewModel() {
     private val _name = MutableStateFlow<String?>(null)
     val name = _name.asStateFlow()
 
+    private val _userName = MutableStateFlow<String?>(null)
+    val userName: StateFlow<String?> = _userName
+
+    private val _following = MutableStateFlow<List<DocumentReference>>(emptyList())
+    val following: StateFlow<List<DocumentReference>> = _following
+
+    private val _isFollowing = MutableStateFlow<Boolean?>(null)
+    val isFollowing: StateFlow<Boolean?> = _isFollowing
+
+    // StateFlows to hold counts
+    private val _followersCount = MutableStateFlow<Int>(0)
+    val followersCount: StateFlow<Int> = _followersCount
+
+    private val _followingCount = MutableStateFlow<Int>(0)
+    val followingCount: StateFlow<Int> = _followingCount
+
 
 
     private val _email = MutableStateFlow<String?>(null)
@@ -55,6 +69,55 @@ class ProfileViewModel() : ViewModel() {
         currentUser = firebaseAuth.currentUser
         // When the auth state changes, load user profile information
         loadUserProfile()
+    }
+
+    fun checkIfFollowing(targetUserId: String) {
+        val currentUserRef =
+            auth.currentUser?.uid?.let { firestore.collection("users").document(it) } ?: return
+
+        currentUserRef.get().addOnSuccessListener { document ->
+            val following = document["following"] as? List<DocumentReference> ?: listOf()
+            _isFollowing.value = following.any { it.id == targetUserId }
+        }.addOnFailureListener { e ->
+            Log.e("ProfileViewModel", "Error checking follow status", e)
+        }
+    }
+    // Inside ProfileViewModel
+    fun toggleFollowUser(targetUserId: String) {
+        val currentUserRef = auth.currentUser?.uid?.let { firestore.collection("users").document(it) } ?: return
+        val targetUserRef = firestore.collection("users").document(targetUserId)
+
+        _isFollowing.value?.let { alreadyFollowing ->
+            if (alreadyFollowing) {
+                // Unfollow
+                currentUserRef.update("following", FieldValue.arrayRemove(targetUserRef))
+                targetUserRef.update("followers", FieldValue.arrayRemove(currentUserRef))
+                _isFollowing.value = false
+            } else {
+                // Follow
+                currentUserRef.update("following", FieldValue.arrayUnion(targetUserRef))
+                targetUserRef.update("followers", FieldValue.arrayUnion(currentUserRef))
+                _isFollowing.value = true
+            }
+        }
+    }
+
+    fun fetchFollowCounts(userIdParam: String? = null) {
+        val userIdToUse = userIdParam ?: auth.currentUser?.uid
+        userIdToUse?.let { userId ->
+            // Fetch following count
+            firestore.collection("users").document(userId).get()
+                .addOnSuccessListener { documentSnapshot ->
+                    val following = documentSnapshot["following"] as? List<*>
+                    _followingCount.value = following?.size ?: 0
+
+                    // Assuming you store followers in a way that can be counted directly from the user's document
+                    val followers = documentSnapshot["followers"] as? List<*>
+                    _followersCount.value = followers?.size ?: 0
+                }.addOnFailureListener { e ->
+                Log.e("ProfileViewModel", "Error fetching follow counts", e)
+            }
+        }
     }
 
     init {
@@ -79,6 +142,7 @@ class ProfileViewModel() : ViewModel() {
             }
         }
     }
+
 
     private fun loadUserProfile() {
         currentUser?.let { user ->
@@ -110,8 +174,9 @@ class ProfileViewModel() : ViewModel() {
 
 
 
-    fun fetchProfileImageUrl() {
-        val userId = auth.currentUser?.uid ?: return
+    fun fetchProfileImageUrl(userIdParam: String? = null) {
+        // Use the provided userId if available, otherwise use the current user's userId
+        val userId = userIdParam ?: auth.currentUser?.uid ?: return
 
         // Define the path in Firebase Storage where the profile image is stored
         val storageRef = storage.reference.child("images/$userId/profile_picture.jpg")
@@ -126,6 +191,20 @@ class ProfileViewModel() : ViewModel() {
                 _profileImageUrl.value = null
             }
     }
+
+    fun fetchUserNameByUserId(userId: String) {
+        viewModelScope.launch {
+            firestore.collection("users").document(userId).get()
+                .addOnSuccessListener { documentSnapshot ->
+                    _userName.value = documentSnapshot.getString("name")
+                }
+                .addOnFailureListener {
+                    // Log the error or set _userName.value to null or a default value
+                    _userName.value = "Unknown User"
+                }
+        }
+    }
+
 
     fun updateProfilePicture(uri: Uri, context: Context, onSuccess: () -> Unit, onFailure: (Exception) -> Unit) {
         val userId = auth.currentUser?.uid

@@ -1,12 +1,9 @@
 package com.example.testmobsec
 
 import android.icu.text.SimpleDateFormat
-import android.util.Log
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -21,12 +18,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Comment
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material3.Button
 import androidx.compose.material3.Divider
@@ -45,13 +38,11 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
@@ -90,7 +81,7 @@ fun ProfileScreen(
         Column(modifier = Modifier
             .fillMaxSize()
             .padding(paddingValues)) {
-           ProfileTopSection(navController,profileViewModel)
+           ProfileTopSection(navController,profileViewModel, postsViewModel)
             TabRowSection(selectedTab = selectedTab, onTabSelected = { tab ->
                 selectedTab = tab
             }, postsViewModel = postsViewModel, profileViewModel, navController)
@@ -293,7 +284,6 @@ fun TabRowSection(selectedTab: Int, onTabSelected: (Int) -> Unit,
         2->{
             postsViewModel.fetchLikedPosts()
             val likedPosts by postsViewModel.likedPosts.collectAsState()
-//            val profileImageUrl by profileViewModel.profileImageUrl.collectAsState()
             val profileImageUrls by profileViewModel.profileImageUrls.collectAsState()
 
 
@@ -379,11 +369,16 @@ fun TabRowSection(selectedTab: Int, onTabSelected: (Int) -> Unit,
 
 @Composable
 fun ProfileTopSection(navController: NavController,
-                      profileViewModel: ProfileViewModel){
+                      profileViewModel: ProfileViewModel, postsViewModel: PostViewModel){
     val name by profileViewModel.name.collectAsState()
     val profileImageUrl by profileViewModel.profileImageUrl.collectAsState()
+    val postsCount by postsViewModel.postsCount.collectAsState()
+    val followersCount by profileViewModel.followersCount.collectAsState()
+    val followingCount by profileViewModel.followingCount.collectAsState()
     LaunchedEffect(true) {
         profileViewModel.fetchProfileImageUrl()
+        postsViewModel.fetchPostsCountForCurrentUser()
+        profileViewModel.fetchFollowCounts()
     }
     Row(
         modifier = Modifier
@@ -422,17 +417,17 @@ fun ProfileTopSection(navController: NavController,
         verticalAlignment = Alignment.Top
     ) {
         Column() {
-            Text("1532", fontWeight = FontWeight.Bold, fontSize = 25.sp)
+            Text("$postsCount", fontWeight = FontWeight.Bold, fontSize = 25.sp)
             Text("Posts")
         }
         //Divider(thickness = 2.dp, color = Color.Gray)
         Column() {
-            Text("4310", fontWeight = FontWeight.Bold, fontSize = 25.sp)
+            Text("$followersCount", fontWeight = FontWeight.Bold, fontSize = 25.sp)
             Text("Followers")
         }
         //Divider(thickness = 2.dp, color = Color.Gray)
         Column() {
-            Text("1310", fontWeight = FontWeight.Bold, fontSize = 25.sp)
+            Text("$followingCount", fontWeight = FontWeight.Bold, fontSize = 25.sp)
             Text("Following")
         }
     }
@@ -447,9 +442,7 @@ fun ProfileTopSection(navController: NavController,
         Button(onClick = {navController.navigate("edit_profile_screen")}) {
             Text("Edit Profile")
         }
-        Button(onClick = {}) {
-            Text("+Follow")
-        }
+
     }
 }
 @Composable

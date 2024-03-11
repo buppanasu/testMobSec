@@ -36,6 +36,10 @@ sealed class Screen(val route:String){
     data object PostDetailsScreen: Screen(route = "postDetails_screen/{postId}"){
 
     }
+
+    data object OthersProfileScreen: Screen(route = "othersProfile_screen/{userId}"){
+
+    }
 }
 
 @Composable
@@ -123,6 +127,16 @@ fun NavGraph(
             // Extract postId
             val postId = backStackEntry.arguments?.getString("postId") ?: throw IllegalStateException("postId must be provided")
             PostDetailsScreen(navController = navController, postId)
+            // Implement your PostDetailsScreen composable, which shows the post details
+        }
+
+        composable(
+            route = Screen.OthersProfileScreen.route,
+            arguments = listOf(navArgument("userId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            // Extract postId
+            val userId = backStackEntry.arguments?.getString("userId") ?: throw IllegalStateException("userId must be provided")
+            OthersProfileScreen(navController = navController, userId =  userId)
             // Implement your PostDetailsScreen composable, which shows the post details
         }
 
