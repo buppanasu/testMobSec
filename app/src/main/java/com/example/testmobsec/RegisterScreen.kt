@@ -116,123 +116,130 @@ fun RegisterScreen(sharedViewModel: SharedViewModel,navController: NavController
         mutableStateOf(drawableToByteArray(context, R.drawable.profile))
     }
 
-        //This column is for filling up of input
-        Column(modifier = Modifier.fillMaxSize().padding(50.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally){
-            Image(
-                painter = painterResource(id = R.drawable.signupscreenimage),
-                contentDescription = ""
-            )
-            Spacer(modifier = Modifier.height(10.dp))
+    //This column is for filling up of input
+    Column(modifier = Modifier.fillMaxSize().padding(50.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally){
+        Image(
+            painter = painterResource(id = R.drawable.signupscreenimage),
+            contentDescription = ""
+        )
+        Spacer(modifier = Modifier.height(10.dp))
 
-            TextField(
-                value = name,
-                onValueChange = { name = it },
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text(text = "Username") },
-                isError = nameError.isNotEmpty(), // Highlight the text field if there's an error
-                label = {
-                    // This logic ensures the label "Username" remains unless there's an error
-                    if (nameError.isNotEmpty()) {
-                        Text(nameError)
-                    } else {
-                        Text("Username")
-                    }
-                }
-            )
-
-            Spacer(modifier = Modifier.height(10.dp))
-            TextField(
-                value = email,
-                onValueChange = { email = it },
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text(text = "Email") },
-                isError = emailError.isNotEmpty(),
-                label = {
-                    if (emailError.isNotEmpty()) {
-                        Text(emailError)
-                    } else {
-                        Text("Email")
-                    }
-                }
-            )
-
-            Spacer(modifier = Modifier.height(10.dp))
-            TextField(
-                value = password,
-                onValueChange = { password = it },
-                modifier = Modifier.fillMaxWidth(),
-                placeholder = { Text(text = "Password") },
-                isError = passwordError.isNotEmpty(),
-                label = {
-                    if (passwordError.isNotEmpty()) {
-                        Text(passwordError)
-                    } else {
-                        Text("Password")
-                    }
-                }
-            )
-
-            Spacer(modifier = Modifier.height(10.dp))
-            // Radio button for user
-            Row {
-                Text(text = "Signup as:", fontSize = 15.sp, modifier = Modifier.paddingFromBaseline(top = 28.dp))
-                RadioButton(
-                    selected = selectedRole == UserRole.USER,
-                    onClick = { selectedRole = UserRole.USER }
-                )
-                Text("User", modifier = Modifier.paddingFromBaseline(top = 28.dp))
-                // Radio button for event manager
-                RadioButton(
-                    selected = selectedRole == UserRole.EVENT_MANAGER,
-                    onClick = { selectedRole = UserRole.EVENT_MANAGER }
-                )
-                Text("Event Manager", modifier = Modifier.paddingFromBaseline(top = 28.dp))
-            }
-
-            Button(onClick = {
-                var isValid = true // Assuming inputs are valid initially
-
-                // Perform validation checks
-                if (!validateEmail()) isValid = false
-                if (!validateName()) isValid = false
-                if (!validatePassword()) isValid = false
-
-                // Proceed if all inputs are valid
-                if (isValid) {
-                    // Firebase authentication and data storage logic
-                    FirebaseAuth.getInstance().createUserWithEmailAndPassword(email, password)
-                        .addOnCompleteListener { task ->
-                            if (task.isSuccessful) {
-                                // User created successfully, now store additional data
-                                val userId = task.result.user!!.uid
-                                sharedViewModel.uploadDefaultProfileImage(userId,defaultImageByteArray, context)
-                                val userData = UserData(name = name, email = email, role = selectedRole)
-                                FirebaseFirestore.getInstance().collection("users").document(userId).set(userData)
-                                    .addOnSuccessListener {
-                                        // Data stored successfully
-                                        sharedViewModel.saveData(userData = userData,defaultImageByteArray, context = context)
-                                        Toast.makeText(context, "Register Success!", Toast.LENGTH_SHORT).show()
-                                        navController.navigate("login_screen")
-                                    }
-                                    .addOnFailureListener { e ->
-                                        // Handle errors in storing user data
-                                        Log.e("RegisterScreen", "Error storing user data: $e")
-                                    }
-                            } else {
-                                // Handle authentication errors
-                                Log.e("RegisterScreen", "Error creating user: ${task.exception}")
-                            }
-                        }
+        TextField(
+            value = name,
+            onValueChange = { name = it },
+            modifier = Modifier.fillMaxWidth(),
+            placeholder = { Text(text = "Username") },
+            isError = nameError.isNotEmpty(), // Highlight the text field if there's an error
+            label = {
+                // This logic ensures the label "Username" remains unless there's an error
+                if (nameError.isNotEmpty()) {
+                    Text(nameError)
                 } else {
-                    // Optionally, show a toast or log if validation fails
-                    Toast.makeText(context, "Please check your inputs", Toast.LENGTH_SHORT).show()
+                    Text("Username")
                 }
-            }){
-                Text("Register")
             }
-            Button( onClick = {navController.navigate("login_screen")}){
-                Text("Login Here")
+        )
+
+        Spacer(modifier = Modifier.height(10.dp))
+        TextField(
+            value = email,
+            onValueChange = { email = it },
+            modifier = Modifier.fillMaxWidth(),
+            placeholder = { Text(text = "Email") },
+            isError = emailError.isNotEmpty(),
+            label = {
+                if (emailError.isNotEmpty()) {
+                    Text(emailError)
+                } else {
+                    Text("Email")
+                }
             }
+        )
+
+        Spacer(modifier = Modifier.height(10.dp))
+        TextField(
+            value = password,
+            onValueChange = { password = it },
+            modifier = Modifier.fillMaxWidth(),
+            placeholder = { Text(text = "Password") },
+            isError = passwordError.isNotEmpty(),
+            label = {
+                if (passwordError.isNotEmpty()) {
+                    Text(passwordError)
+                } else {
+                    Text("Password")
+                }
+            }
+        )
+
+        Spacer(modifier = Modifier.height(10.dp))
+        // Radio button for user
+        Row {
+            Text(text = "Signup as:", fontSize = 15.sp, modifier = Modifier.paddingFromBaseline(top = 28.dp))
+            RadioButton(
+                selected = selectedRole == UserRole.USER,
+                onClick = { selectedRole = UserRole.USER }
+            )
+            Text("User", modifier = Modifier.paddingFromBaseline(top = 28.dp))
+            // Radio button for event manager
+            RadioButton(
+                selected = selectedRole == UserRole.EVENT_MANAGER,
+                onClick = { selectedRole = UserRole.EVENT_MANAGER }
+            )
+            Text("Event Manager", modifier = Modifier.paddingFromBaseline(top = 28.dp))
         }
+        Row{
+            RadioButton(
+                selected = selectedRole == UserRole.ARTIST,
+                onClick = { selectedRole = UserRole.ARTIST }
+            )
+            Text("Artist", modifier = Modifier.paddingFromBaseline(top = 28.dp))
+        }
+
+        Button(onClick = {
+            var isValid = true // Assuming inputs are valid initially
+
+            // Perform validation checks
+            if (!validateEmail()) isValid = false
+            if (!validateName()) isValid = false
+            if (!validatePassword()) isValid = false
+
+            // Proceed if all inputs are valid
+            if (isValid) {
+                // Firebase authentication and data storage logic
+                FirebaseAuth.getInstance().createUserWithEmailAndPassword(email, password)
+                    .addOnCompleteListener { task ->
+                        if (task.isSuccessful) {
+                            // User created successfully, now store additional data
+                            val userId = task.result.user!!.uid
+                            sharedViewModel.uploadDefaultProfileImage(userId,defaultImageByteArray, context)
+                            val userData = UserData(name = name, email = email, role = selectedRole)
+                            FirebaseFirestore.getInstance().collection("users").document(userId).set(userData)
+                                .addOnSuccessListener {
+                                    // Data stored successfully
+                                    sharedViewModel.saveData(userData = userData,defaultImageByteArray, context = context)
+                                    Toast.makeText(context, "Register Success!", Toast.LENGTH_SHORT).show()
+                                    navController.navigate("login_screen")
+                                }
+                                .addOnFailureListener { e ->
+                                    // Handle errors in storing user data
+                                    Log.e("RegisterScreen", "Error storing user data: $e")
+                                }
+                        } else {
+                            // Handle authentication errors
+                            Log.e("RegisterScreen", "Error creating user: ${task.exception}")
+                        }
+                    }
+            } else {
+                // Optionally, show a toast or log if validation fails
+                Toast.makeText(context, "Please check your inputs", Toast.LENGTH_SHORT).show()
+            }
+        }){
+            Text("Register")
+        }
+        Button( onClick = {navController.navigate("login_screen")}){
+            Text("Login Here")
+        }
+    }
 
 }

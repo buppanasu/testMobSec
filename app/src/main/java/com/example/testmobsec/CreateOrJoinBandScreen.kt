@@ -28,7 +28,7 @@ fun CreateOrJoinBandScreen(navController: NavController = rememberNavController(
         Button(onClick = { navController.navigate("createband_screen") }) {
             Text("Create Band")
         }
-        Button(onClick = { /*TODO*/ }) {
+        Button(onClick = { navController.navigate("joinband_screen") }) {
             Text("Join a band")
         }
 

@@ -253,7 +253,7 @@ fun TabRowSection(selectedTab: Int, onTabSelected: (Int) -> Unit,
                         Spacer(modifier = Modifier.width(20.dp))
                         Column(
                             modifier = Modifier
-                                .weight(1f)
+                                .weight(1.5f)
                                 .padding(8.dp)
                         ) {
                             Text(text = name, fontWeight = FontWeight.Bold,
@@ -287,82 +287,95 @@ fun TabRowSection(selectedTab: Int, onTabSelected: (Int) -> Unit,
         }
     }
 }
-
 @Composable
-fun ProfileTopSection(navController: NavController,
-                      profileViewModel: ProfileViewModel){
+fun ProfileTopSection(navController: NavController, profileViewModel: ProfileViewModel) {
     val name by profileViewModel.name.collectAsState()
     val profileImageUrl by profileViewModel.profileImageUrl.collectAsState()
-    LaunchedEffect(true) {
-        profileViewModel.fetchProfileImageUrl()
+
+    // Hardcoded follower and following counts
+    val followers = "400"
+    val following = "100"
+    val posts = "42"
+
+    LaunchedEffect(key1 = true) {
+        profileViewModel.fetchProfileImageUrl() // This is your existing method to fetch the image URL
     }
-    Row(
+
+    Column(
         modifier = Modifier
-            .padding(vertical = 8.dp)
-            .fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
+            .fillMaxWidth()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        //Text("Test1")
-        Spacer(modifier = Modifier.width(35.dp))
+        Spacer(modifier = Modifier.height(16.dp))
+
         profileImageUrl?.let { url ->
             Image(
                 painter = rememberAsyncImagePainter(url),
-                contentDescription = "",
+                contentDescription = "Profile Image",
                 modifier = Modifier
-                    .size(100.dp)
+                    .size(120.dp)
                     .clip(CircleShape)
-                    .border(1.5.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                    .border(2.dp, MaterialTheme.colorScheme.onSurface, CircleShape)
             )
-        }  ?: Text("No profile image available")
-        Spacer(modifier = Modifier.width(20.dp))
-        Column() {
-            name?.let {
-                Text(text = "Name: $it",
-                    modifier = Modifier.paddingFromBaseline(top = 20.dp),
-                    fontSize = 23.sp)
-            }
-            Text(profileViewModel.getCreationTimestamp().toString()) //created at
+        } ?: Icon(
+            imageVector = Icons.Default.AccountCircle,
+            contentDescription = "Default Profile Image",
+            modifier = Modifier
+                .size(120.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+        )
 
+        Spacer(modifier = Modifier.height(8.dp))
+
+        name?.let {
+            Text(
+                text = it,
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold
+            )
         }
-    }
-    Row(
-        modifier = Modifier
-            .padding(vertical = 8.dp)
-            .fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceEvenly,
-        verticalAlignment = Alignment.Top
-    ) {
-        Column() {
-            Text("1532", fontWeight = FontWeight.Bold, fontSize = 25.sp)
-            Text("Posts")
+
+        Text(text = "Hi I'm lorem ipsum!!", fontSize = 16.sp, fontWeight = FontWeight.Medium)
+
+        Row(
+            modifier = Modifier
+                .padding(top = 8.dp)
+                .fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceAround
+        ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(text = posts, fontWeight = FontWeight.Bold)
+                Text(text = "Posts")
+            }
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(text = followers, fontWeight = FontWeight.Bold)
+                Text(text = "Followers")
+            }
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(text = following, fontWeight = FontWeight.Bold)
+                Text(text = "Following")
+            }
         }
-        //Divider(thickness = 2.dp, color = Color.Gray)
-        Column() {
-            Text("4310", fontWeight = FontWeight.Bold, fontSize = 25.sp)
-            Text("Followers")
-        }
-        //Divider(thickness = 2.dp, color = Color.Gray)
-        Column() {
-            Text("1310", fontWeight = FontWeight.Bold, fontSize = 25.sp)
-            Text("Following")
-        }
-    }
-    Row(
-        modifier = Modifier
-            .padding(vertical = 40.dp)
-            .fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceEvenly,
-        verticalAlignment = Alignment.Top
-    ) {
-        //Text("Test3")
-        Button(onClick = {navController.navigate("edit_profile_screen")}) {
-            Text("Edit Profile")
-        }
-        Button(onClick = {}) {
-            Text("+Follow")
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(top = 16.dp),
+            horizontalArrangement = Arrangement.SpaceEvenly
+        ) {
+            Button(onClick = { navController.navigate("edit_profile_screen") }) {
+                Text("Edit Profile")
+            }
+            //USE THE BELOW BUTTON FOR WHEN VIEWING OTHER PEOPLE's PROFILE, so need implement the logic
+//            Button(onClick = { /* Implement Follow action */ }) {
+//                Text("+Follow")
+//            }
         }
     }
 }
+
 @Composable
 fun formatDate(timestamp: Any?): String {
     return if (timestamp is com.google.firebase.Timestamp) {

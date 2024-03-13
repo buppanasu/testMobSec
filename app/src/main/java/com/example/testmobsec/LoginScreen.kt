@@ -46,6 +46,7 @@ fun LoginScreen(navController: NavController = rememberNavController()) {
     var emailError: String by remember { mutableStateOf("") }
     var passwordError: String by remember { mutableStateOf("") }
 
+
     val context = LocalContext.current
 
     // Validation Functions
@@ -98,11 +99,7 @@ fun LoginScreen(navController: NavController = rememberNavController()) {
             value = email,
             onValueChange = { email = it },
             modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text(text = "Email") },
-            isError = emailError.isNotEmpty(),
-            label = {
-                if (emailError.isNotEmpty()) Text(emailError) else Text("Email")
-            }
+            placeholder = { Text(text = "Email") }
         )
         Spacer(modifier = Modifier.height(10.dp))
         TextField(
@@ -147,6 +144,26 @@ fun LoginScreen(navController: NavController = rememberNavController()) {
                                 .show()
                         }
                     }
+            //Attempt to login using firebase authentication
+            FirebaseAuth.getInstance()
+                .signInWithEmailAndPassword(email, password)
+                .addOnCompleteListener { task ->
+                    if (task.isSuccessful) {
+                        //Login Successful, handle success
+                        val user = task.result.user!!
+                        Log.d("LoginScreen", "Logged in user: ${user.email}")
+                        Toast.makeText(context, "Correct email and password", Toast.LENGTH_SHORT)
+                            .show()
+                        //navController.navigate("createband_screen")
+                        navController.navigate("home_screen")
+                    } else {
+                        //Login failed, handle error
+                        Log.e("LoginScreen", "Login Error: ${task.exception}")
+                        //Show an error message to the user
+                        Toast.makeText(context, "Invalid email or password", Toast.LENGTH_SHORT)
+                            .show()
+                    }
+                }
 
             } else {
                 // If validation fails, show a toast message

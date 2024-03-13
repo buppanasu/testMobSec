@@ -1,5 +1,5 @@
 package com.example.testmobsec.util
 
 enum class UserRole {
-    USER, EVENT_MANAGER
+    USER, ARTIST, EVENT_MANAGER,
 }

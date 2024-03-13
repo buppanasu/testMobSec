@@ -17,10 +17,12 @@ import androidx.compose.foundation.layout.paddingFromBaseline
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Comment
 import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material3.Button
@@ -66,7 +68,7 @@ fun HomeScreen(navController: NavController = rememberNavController()) {
         Column(modifier = Modifier
             .fillMaxSize()
             .padding(paddingValues)) {
-            HomePostsSection(postsViewModel, profileViewModel)
+            HomePostsSection(postsViewModel, profileViewModel, navController)
 
 
         }
@@ -77,7 +79,7 @@ fun HomeScreen(navController: NavController = rememberNavController()) {
 
 
 @Composable
-fun HomePostsSection(postsViewModel: PostViewModel, profileViewModel:ProfileViewModel){
+fun HomePostsSection(postsViewModel: PostViewModel, profileViewModel:ProfileViewModel, navController: NavController) {
     val posts by postsViewModel.posts.collectAsState(initial = emptyList())
     postsViewModel.fetchPostsForHome()
     val profileImageUrls by profileViewModel.profileImageUrls.collectAsState()
@@ -85,78 +87,148 @@ fun HomePostsSection(postsViewModel: PostViewModel, profileViewModel:ProfileView
     val likesCountMap = remember { mutableStateMapOf<String, Int>() }
     val userLikesMap = remember { mutableStateMapOf<String, Boolean>() }
 
-    // Display posts in the first tab
-    LazyColumn {
-        items(posts) { postMap ->
-            val userDocRef = postMap["userId"] as? DocumentReference
-            val postId = postMap["postId"] as String
-            val likesCountFlow = postsViewModel.getLikesCountFlow(postId)
-            val likesCount by likesCountFlow.collectAsState()
+    Column() {
 
-            val userId = userDocRef?.id.toString()
-            LaunchedEffect(userId) {
-                profileViewModel.fetchProfileImageUrlByUserId(userId)
-            }
-            val name = postMap["userName"] as? String?: "No Content"
-            val content = postMap["content"] as? String ?: "No Content"
-            val timestamp = postMap["timestamp"]
-            val imageUrl = profileImageUrls[userId]
 
+        //For the stuff thats not post related
+        Column(modifier = Modifier.weight(1f)) {
             Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(8.dp),
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier.padding(16.dp)
             ) {
-//                Log.d("PROFILE SECTION", imageUrl)
-                if (imageUrl != null) {
-
-                    // Display the image from the URL
-                    Image(
-                        painter = rememberAsyncImagePainter(imageUrl),
-                        contentDescription = "Profile Picture",
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(CircleShape)
+                Text(
+                    text = "Bands you are following",
+                    style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold
+                )
+                Spacer(Modifier.weight(1f))
+                IconButton(onClick = { navController.navigate("searchband_screen") }) {
+                    Icon(
+                        imageVector = Icons.Default.Add,
+                        contentDescription = "Add"
                     )
-                } else {
-                    // Placeholder or default image
-                    Icon(Icons.Default.AccountCircle, contentDescription = "Default Profile", modifier = Modifier.size(40.dp))
-                }
-
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(8.dp)
-                ) {
-
-
-                    Text(text = name, fontWeight = FontWeight.Bold,
-                        style = TextStyle(fontSize = 18.sp)
-                    )
-                    Divider()
-                    Text(text = content, style = TextStyle(fontSize = 14.sp))
-                    Text(text = formatDate(timestamp), style = TextStyle(fontSize = 12.sp))
-                    Spacer(modifier = Modifier.height(4.dp))
-
-                }
-                IconButton(onClick = { /* Handle comment action */ }) {
-                    Icon(Icons.Filled.Comment, contentDescription = "Comment")
-                }
-                val isLiked by postsViewModel.isPostLikedByUser(postId).collectAsState(initial = false)
-                val likeIconColor = if (isLiked) Color.Blue else Color.Gray
-                IconButton(onClick = { postsViewModel.toggleLike(postId) }) {
-                    Icon(Icons.Filled.ThumbUp, contentDescription = "Like", tint = likeIconColor)
-                }
-                // Conditional likes count text
-                if (likesCount > 0) {
-                    Text(text = "$likesCount")
                 }
             }
-            Divider()
+            LazyRow(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.padding(horizontal = 16.dp)
+            ) {
+                // TODO: Replace this with a dynamic list of followed bands
+                items(3) { index ->
+                    // This is a placeholder for a band, use actual data here
+                    FollowedBandItem(bandName = "Band ${index + 1}", imageUrl = "http://placekitten.com/200/200")
+                }
+            }
+        }
+
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text(
+                text = "Latest updates from your bands!",
+                style = MaterialTheme.typography.headlineSmall,fontWeight = FontWeight.Bold
+            )
+        }
+        //Divider(modifier = Modifier.height(5.dp), color = Color.LightGray)
+
+        // Display posts in the first tab
+        LazyColumn(modifier = Modifier.weight(2f)) {
+            items(posts) { postMap ->
+                val userDocRef = postMap["userId"] as? DocumentReference
+                val postId = postMap["postId"] as String
+                val likesCountFlow = postsViewModel.getLikesCountFlow(postId)
+                val likesCount by likesCountFlow.collectAsState()
+
+                val userId = userDocRef?.id.toString()
+                LaunchedEffect(userId) {
+                    profileViewModel.fetchProfileImageUrlByUserId(userId)
+                }
+                val name = postMap["userName"] as? String ?: "No Content"
+                val content = postMap["content"] as? String ?: "No Content"
+                val timestamp = postMap["timestamp"]
+                val imageUrl = profileImageUrls[userId]
+
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+    //                Log.d("PROFILE SECTION", imageUrl)
+                    if (imageUrl != null) {
+
+                        // Display the image from the URL
+                        Image(
+                            painter = rememberAsyncImagePainter(imageUrl),
+                            contentDescription = "Profile Picture",
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                        )
+                    } else {
+                        // Placeholder or default image
+                        Icon(
+                            Icons.Default.AccountCircle,
+                            contentDescription = "Default Profile",
+                            modifier = Modifier.size(40.dp)
+                        )
+                    }
+
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .padding(8.dp)
+                    ) {
+
+
+                        Text(
+                            text = name, fontWeight = FontWeight.Bold,
+                            style = TextStyle(fontSize = 18.sp)
+                        )
+                        Divider()
+                        Text(text = content, style = TextStyle(fontSize = 14.sp))
+                        Text(text = formatDate(timestamp), style = TextStyle(fontSize = 12.sp))
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                    }
+                    IconButton(onClick = { /* Handle comment action */ }) {
+                        Icon(Icons.Filled.Comment, contentDescription = "Comment")
+                    }
+                    val isLiked by postsViewModel.isPostLikedByUser(postId)
+                        .collectAsState(initial = false)
+                    val likeIconColor = if (isLiked) Color.Blue else Color.Gray
+                    IconButton(onClick = { postsViewModel.toggleLike(postId) }) {
+                        Icon(Icons.Filled.ThumbUp, contentDescription = "Like", tint = likeIconColor)
+                    }
+                    // Conditional likes count text
+                    if (likesCount > 0) {
+                        Text(text = "$likesCount")
+                    }
+                }
+                Divider()
+            }
         }
     }
 }
+
+
+
+
+@Composable
+fun FollowedBandItem(bandName: String, imageUrl: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Image(
+            painter = rememberAsyncImagePainter(imageUrl),
+            contentDescription = "$bandName Image",
+            modifier = Modifier
+                .size(80.dp)
+                .clip(CircleShape)
+                .border(1.5.dp, MaterialTheme.colorScheme.onSurface, CircleShape)
+        )
+        Text(text = bandName, style = MaterialTheme.typography.headlineSmall)
+    }
+}
+
 
 
 

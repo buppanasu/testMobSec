@@ -1,5 +1,6 @@
 package com.example.testmobsec
 
+import BandViewModel
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -15,11 +16,12 @@ import com.example.testmobsec.util.SharedViewModel
 
 class MainActivity : ComponentActivity() {
     private val sharedViewModel: SharedViewModel by viewModels()
+    private val bandViewModel: BandViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
-            MainApp(sharedViewModel = sharedViewModel)
+            MainApp(sharedViewModel = sharedViewModel, bandViewModel = bandViewModel)
 //            Surface {
 ////                SearchScreenFunction()
 //
@@ -37,7 +39,7 @@ class MainActivity : ComponentActivity() {
 
 
 @Composable
-fun MainApp(sharedViewModel: SharedViewModel) {
+fun MainApp(sharedViewModel: SharedViewModel, bandViewModel: BandViewModel) {
 
         // A surface container using the 'background' color from the theme
         Surface(
@@ -45,7 +47,7 @@ fun MainApp(sharedViewModel: SharedViewModel) {
             color = MaterialTheme.colorScheme.background
         ) {
             val navController = rememberNavController()
-            NavGraph(navController = navController, sharedViewModel =  sharedViewModel)
+            NavGraph(navController = navController, sharedViewModel =  sharedViewModel, bandViewModel = bandViewModel)
         }
 
 }

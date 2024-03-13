@@ -34,38 +34,27 @@ import com.example.testmobsec.util.UserData
 import com.example.testmobsec.util.UserRole
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun CreateBandScreen(navController: NavController = rememberNavController()) {
     var bandName: String by remember { mutableStateOf("") }
     var isExpanded by remember { mutableStateOf(false) }
-
     var selectedBandRole by remember { mutableStateOf<BandRole?>(null) }
-
-    // Get the current context
     val context = LocalContext.current
-
-
 
     Column(
         modifier = Modifier.fillMaxSize(),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-
         TextField(
             value = bandName,
             onValueChange = { bandName = it },
-            placeholder = { Text(text = "Band Name") },
-            //label = {Text(text = "Come up with a band name")},
+            placeholder = { Text(text = "Band Name") }
         )
         Spacer(modifier = Modifier.height(10.dp))
         Box(contentAlignment = Alignment.Center) {
-            ExposedDropdownMenuBox(
-                expanded = isExpanded,
-                onExpandedChange = { isExpanded = it }
-            ) {
+            ExposedDropdownMenuBox(expanded = isExpanded, onExpandedChange = { isExpanded = it }) {
                 TextField(
                     value = selectedBandRole?.name ?: "",
                     onValueChange = {},
@@ -73,13 +62,12 @@ fun CreateBandScreen(navController: NavController = rememberNavController()) {
                     trailingIcon = { TrailingIcon(expanded = isExpanded) },
                     colors = ExposedDropdownMenuDefaults.textFieldColors(),
                     modifier = Modifier.menuAnchor(),
-                    placeholder = { Text(text = "Select your role in the band") },
-
-                    )
-
+                    placeholder = { Text(text = "Select your role in the band") }
+                )
                 ExposedDropdownMenu(
                     expanded = isExpanded,
-                    onDismissRequest = { isExpanded = false }) {
+                    onDismissRequest = { isExpanded = false }
+                ) {
                     BandRole.values().forEach { role ->
                         DropdownMenuItem(
                             text = { Text(text = role.name.replace('_', ' ')) },
@@ -89,60 +77,49 @@ fun CreateBandScreen(navController: NavController = rememberNavController()) {
                             }
                         )
                     }
-
-
                 }
-
-
             }
         }
 
-        //Button to update the Band and Role fields for a document(documentID is the firebaseauth user ID
         Button(onClick = {
             val currentUser = FirebaseAuth.getInstance().currentUser
             if (currentUser != null && selectedBandRole != null && bandName.isNotBlank()) {
-                val userId = currentUser.uid // Get the user ID from FirebaseAuth
-                val userData = hashMapOf(
+                val userId = currentUser.uid
+                val bandsCollectionRef = FirebaseFirestore.getInstance().collection("bands")
+                val newBandData = hashMapOf(
                     "bandName" to bandName,
-                    "bandRole" to selectedBandRole!!.name
+                    "members" to listOf(userId) // Initially, the user is the only member.
                 )
 
-                // Update the user's document with the new fields
-                val userRef = FirebaseFirestore.getInstance().collection("users").document(userId)
-                userRef.update(userData as Map<String, Any>)
-                    .addOnSuccessListener {
-                        // Success handling
-                        Toast.makeText(
-                            context,
-                            "Band and Role updated successfully!",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                        // Navigate to the next screen if needed
-                    }
-                    .addOnFailureListener { e ->
-                        // Error handling
-                        Log.e("CreateBandScreen", "Error updating user data", e)
-                        Toast.makeText(
-                            context,
-                            "Failed to update Band and Role.",
-                            Toast.LENGTH_SHORT
-                        ).show()
-                    }
-                val bandRef = FirebaseFirestore.getInstance().collection("bands").document(bandName)
+                bandsCollectionRef.add(newBandData).addOnSuccessListener { documentReference ->
+                    val newBandId = documentReference.id
+
+                    val userUpdates = hashMapOf(
+                        "bandId" to newBandId,
+                        "bandName" to bandName,
+                        "bandRole" to selectedBandRole!!.name,
+                        "isBandCreator" to true
+                    )
+
+                    val userRef = FirebaseFirestore.getInstance().collection("users").document(userId)
+                    userRef.update(userUpdates as Map<String, Any>)
+                        .addOnSuccessListener {
+                            Toast.makeText(context, "Band created and linked to your profile!", Toast.LENGTH_SHORT).show()
+                            // Optionally navigate to the next screen.
+                        }
+                        .addOnFailureListener { e ->
+                            Log.e("CreateBandScreen", "Error linking band to user profile", e)
+                            Toast.makeText(context, "Failed to link band to your profile.", Toast.LENGTH_SHORT).show()
+                        }
+                }.addOnFailureListener { e ->
+                    Log.e("CreateBandScreen", "Error creating band", e)
+                    Toast.makeText(context, "Failed to create band.", Toast.LENGTH_SHORT).show()
+                }
             } else {
-                // Handle the case where the band role isn't selected or band name is blank
-                Toast.makeText(
-                    context,
-                    "Please enter a band name and select a role.",
-                    Toast.LENGTH_SHORT
-                ).show()
+                Toast.makeText(context, "Please enter a band name and select a role.", Toast.LENGTH_SHORT).show()
             }
         }) {
-            Text("Register")
+            Text("Create Band")
         }
-
-
     }
 }
-
-
