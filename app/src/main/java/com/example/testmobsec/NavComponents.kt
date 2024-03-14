@@ -1,5 +1,6 @@
 package com.example.testmobsec
 
+import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
@@ -21,30 +22,53 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import androidx.navigation.compose.currentBackStackEntryAsState
+import com.example.testmobsec.viewModel.BandViewModel
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 
 @Composable
 fun BottomAppBarContent(
-    navController: NavController
+    navController: NavController,
+    bandViewModel: BandViewModel = viewModel()
 ) {
+    // Assume _userRole is a State variable in your ViewModel
+    val userRole by bandViewModel.userRole.collectAsState()
+
+    LaunchedEffect(Unit) {
+        bandViewModel.fetchUserRole()
+    }
+
     BottomAppBar(
         containerColor = MaterialTheme.colorScheme.primaryContainer,
         contentColor = MaterialTheme.colorScheme.onPrimary,
     ) {
         IconTextButton(navController, Icons.Default.Home, "Home", "home_screen")
-        Spacer(Modifier.weight(1f))
-        IconTextButton(navController, Icons.Default.Search, "Search", "search_screen")
-        Spacer(Modifier.weight(1f))
-        // Add icons for Chat and Profile if available in your Icons object
-        IconTextButton(navController, Icons.Default.Add, "Upload", "upload_screen")
-        Spacer(Modifier.weight(1f))
+        Spacer(Modifier.weight(1f, true))
+        IconTextButton(navController, Icons.Default.Search, "Search", "searchband_screen")
+
+        // Conditionally show the Band icon only for ARTIST role
+        if (userRole == "ARTIST") {
+            Spacer(Modifier.weight(1f, true))
+            IconTextButton2(
+                navController,
+                Icons.Default.Add,
+                "Band",
+                onClick = { decideNavigationBasedOnBand(navController) }
+            )
+        }
+
+        Spacer(Modifier.weight(1f, true))
         IconTextButton(navController, Icons.Default.Person, "Profile", "profile_screen")
     }
 }
@@ -58,12 +82,15 @@ fun TopAppBarContent(navController: NavController) {
         currentRoute?.startsWith("home_screen") == true -> "Home"
         currentRoute?.startsWith("profile_screen") == true -> "Profile"
         currentRoute?.startsWith("post_screen") == true -> "Upload Post"
-        currentRoute?.startsWith("search_screen") == true -> "Search"
+        currentRoute?.startsWith("searchband_screen") == true -> "Search Band"
+        currentRoute?.startsWith("band_screen") == true -> "Own Band"
+        currentRoute?.startsWith("other_band_screen") == true -> "Other Band"
         currentRoute?.startsWith("edit_profile_screen") == true -> "Edit Profile Details"
         currentRoute?.startsWith("comment_screen") == true -> "Comments"
         currentRoute?.startsWith("postDetails_screen") == true -> "Post Details"
         currentRoute?.startsWith("createorjoinband_screen") == true -> "TBC: Create or join Band"
         currentRoute?.startsWith("createband_screen") == true -> "TBC: Create Band"
+        currentRoute?.startsWith("feedback_screen") == true -> "Give Feedback"
         currentRoute?.startsWith("othersProfile_screen") == true -> ""
 
 
@@ -157,5 +184,44 @@ fun IconTextButton(
     ) {
         Icon(imageVector = icon, contentDescription = text)
         Text(text = text, style = MaterialTheme.typography.labelSmall)
+    }
+}
+@Composable
+fun IconTextButton2(
+    navController: NavController,
+    icon: ImageVector,
+    text: String,
+    onClick: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .clickable(onClick = onClick) // Use the provided onClick lambda here
+            .padding(8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Icon(imageVector = icon, contentDescription = text)
+        Text(text = text, style = MaterialTheme.typography.labelSmall)
+    }
+}
+
+
+// Custom function for conditional navigation based on the user's bandId
+fun decideNavigationBasedOnBand(navController: NavController) {
+    val userId = FirebaseAuth.getInstance().currentUser?.uid
+    if (userId != null) {
+        val userDocRef = FirebaseFirestore.getInstance().collection("users").document(userId)
+        userDocRef.get().addOnSuccessListener { documentSnapshot ->
+            val bandId = documentSnapshot.getString("bandId")
+            if (bandId.isNullOrEmpty()) {
+                // User doesn't have a band, navigate to CreateOrJoinBandScreen
+                navController.navigate("createorjoinband_screen")
+            } else {
+                // User has a band, navigate to BandScreen
+                navController.navigate("band_screen/$bandId")
+            }
+        }.addOnFailureListener { e ->
+            Log.e("NavComponent", "Error fetching user bandId", e)
+            // Handle the error or navigate to a default screen
+        }
     }
 }

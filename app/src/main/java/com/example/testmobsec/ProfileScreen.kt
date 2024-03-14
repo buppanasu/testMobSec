@@ -2,6 +2,7 @@ package com.example.testmobsec
 
 import android.icu.text.SimpleDateFormat
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -11,13 +12,13 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.paddingFromBaseline
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Comment
 import androidx.compose.material.icons.filled.ThumbUp
@@ -323,7 +324,7 @@ fun TabRowSection(selectedTab: Int, onTabSelected: (Int) -> Unit,
                         Spacer(modifier = Modifier.width(20.dp))
                         Column(
                             modifier = Modifier
-                                .weight(1f)
+                                .weight(1.5f)
                                 .padding(8.dp)
                         ) {
                             Text(text = name, fontWeight = FontWeight.Bold,
@@ -380,35 +381,45 @@ fun ProfileTopSection(navController: NavController,
         postsViewModel.fetchPostsCountForCurrentUser()
         profileViewModel.fetchFollowCounts()
     }
-    Row(
+
+    Column(
         modifier = Modifier
-            .padding(vertical = 8.dp)
-            .fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
+            .fillMaxWidth()
+            .padding(16.dp),
+        horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        //Text("Test1")
-        Spacer(modifier = Modifier.width(35.dp))
+        Spacer(modifier = Modifier.height(16.dp))
+
         profileImageUrl?.let { url ->
             Image(
                 painter = rememberAsyncImagePainter(url),
-                contentDescription = "",
+                contentDescription = "Profile Image",
                 modifier = Modifier
-                    .size(100.dp)
+                    .size(120.dp)
                     .clip(CircleShape)
-                    .border(1.5.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                    .border(2.dp, MaterialTheme.colorScheme.onSurface, CircleShape)
             )
-        }  ?: Text("No profile image available")
-        Spacer(modifier = Modifier.width(20.dp))
-        Column() {
-            name?.let {
-                Text(text = "Name: $it",
-                    modifier = Modifier.paddingFromBaseline(top = 20.dp),
-                    fontSize = 23.sp)
-            }
-            Text(profileViewModel.getCreationTimestamp().toString()) //created at
+        } ?: Icon(
+            imageVector = Icons.Default.AccountCircle,
+            contentDescription = "Default Profile Image",
+            modifier = Modifier
+                .size(120.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+        )
+
+        Spacer(modifier = Modifier.height(8.dp))
+
+        name?.let {
+            Text(
+                text = it,
+                fontSize = 24.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
 
         }
-    }
+
     Row(
         modifier = Modifier
             .padding(vertical = 8.dp)
@@ -445,6 +456,7 @@ fun ProfileTopSection(navController: NavController,
 
     }
 }
+
 @Composable
 fun formatDate(timestamp: Any?): String {
     return if (timestamp is com.google.firebase.Timestamp) {

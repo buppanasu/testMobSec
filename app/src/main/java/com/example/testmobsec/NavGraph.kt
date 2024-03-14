@@ -1,5 +1,6 @@
 package com.example.testmobsec
 
+
 import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
@@ -7,8 +8,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import com.example.testmobsec.util.SharedViewModel
-
-
+import com.example.testmobsec.viewModel.BandViewModel
 
 
 sealed class Screen(val route:String){
@@ -22,12 +22,16 @@ sealed class Screen(val route:String){
     data object CreateOrJoinBandScreen: Screen(route = "createorjoinband_screen")
 
     data object CreateBandScreen: Screen(route = "createband_screen")
+    data object JoinBandScreen: Screen(route = "joinband_screen")
+    data object SearchBandScreen: Screen(route = "searchband_screen")
+
 
     data object ProfileScreen: Screen(route = "profile_screen")
 
     data object SearchScreen: Screen(route = "search_screen")
     data object UploadScreen: Screen(route = "upload_screen")
     data object EditProfileScreen: Screen(route = "edit_profile_screen")
+    data object OthersBandScreen: Screen(route = "other_band_screen")
 
     data object PostScreen: Screen(route = "post_screen")
     data object CommentScreen: Screen(route = "comment_screen/{postId}"){
@@ -40,11 +44,16 @@ sealed class Screen(val route:String){
     data object OthersProfileScreen: Screen(route = "othersProfile_screen/{userId}"){
 
     }
+    data object BandScreen: Screen(route = "band_screen/{bandId}")
+
+    data object FeedbackScreen: Screen(route = "feedback_screen/{bandId}")
+
+    data object BandPostScreen: Screen(route = "bandPost_screen/{bandId}")
 }
 
 @Composable
 fun NavGraph(
-    navController: NavHostController,sharedViewModel: SharedViewModel
+    navController: NavHostController,sharedViewModel: SharedViewModel, bandViewModel: BandViewModel
 
 ) {
 
@@ -74,6 +83,47 @@ fun NavGraph(
         }
         composable(Screen.CreateBandScreen.route){
             CreateBandScreen(
+                navController = navController
+            )
+        }
+        composable(
+            route = Screen.BandScreen.route,
+                    arguments = listOf(navArgument("bandId") { type = NavType.StringType })
+        ){
+                backStackEntry ->
+            // Extract postId
+            val bandId = backStackEntry.arguments?.getString("bandId") ?: throw IllegalStateException("userId must be provided")
+            BandScreen(navController = navController, bandId =  bandId)
+        }
+
+
+        composable(
+            "other_band_screen/{bandId}",
+            arguments = listOf(navArgument("bandId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val bandId = backStackEntry.arguments?.getString("bandId") ?: return@composable
+            OtherBandScreen(navController, bandId, bandViewModel)
+        }
+
+        composable(
+            "bandPost_screen/{bandId}",
+            arguments = listOf(navArgument("bandId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val bandId = backStackEntry.arguments?.getString("bandId") ?: return@composable
+            BandPostScreen(navController, bandId)
+        }
+
+        composable(
+            "feedback_screen/{bandId}",
+            arguments = listOf(navArgument("bandId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val bandId = backStackEntry.arguments?.getString("bandId") ?: return@composable
+            FeedbackScreen(navController, bandId)
+        }
+
+
+        composable(Screen.JoinBandScreen.route){
+            JoinBandScreen(
                 navController = navController
             )
         }
@@ -140,6 +190,11 @@ fun NavGraph(
             // Implement your PostDetailsScreen composable, which shows the post details
         }
 
+        composable(Screen.SearchBandScreen.route){
+            SearchBandScreen(
+                navController = navController
+            )
+        }
 
     }
 }

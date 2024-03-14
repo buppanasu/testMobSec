@@ -15,7 +15,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextField
 import androidx.compose.runtime.Composable
@@ -32,7 +31,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
-import com.example.testmobsec.util.UserRole
 import com.google.firebase.auth.FirebaseAuth
 
 
@@ -45,6 +43,7 @@ fun LoginScreen(navController: NavController = rememberNavController()) {
     // Input Validation Variables
     var emailError: String by remember { mutableStateOf("") }
     var passwordError: String by remember { mutableStateOf("") }
+
 
     val context = LocalContext.current
 
@@ -98,11 +97,7 @@ fun LoginScreen(navController: NavController = rememberNavController()) {
             value = email,
             onValueChange = { email = it },
             modifier = Modifier.fillMaxWidth(),
-            placeholder = { Text(text = "Email") },
-            isError = emailError.isNotEmpty(),
-            label = {
-                if (emailError.isNotEmpty()) Text(emailError) else Text("Email")
-            }
+            placeholder = { Text(text = "Email") }
         )
         Spacer(modifier = Modifier.height(10.dp))
         TextField(
@@ -147,6 +142,26 @@ fun LoginScreen(navController: NavController = rememberNavController()) {
                                 .show()
                         }
                     }
+            //Attempt to login using firebase authentication
+            FirebaseAuth.getInstance()
+                .signInWithEmailAndPassword(email, password)
+                .addOnCompleteListener { task ->
+                    if (task.isSuccessful) {
+                        //Login Successful, handle success
+                        val user = task.result.user!!
+                        Log.d("LoginScreen", "Logged in user: ${user.email}")
+                        Toast.makeText(context, "Correct email and password", Toast.LENGTH_SHORT)
+                            .show()
+                        //navController.navigate("createband_screen")
+                        navController.navigate("home_screen")
+                    } else {
+                        //Login failed, handle error
+                        Log.e("LoginScreen", "Login Error: ${task.exception}")
+                        //Show an error message to the user
+                        Toast.makeText(context, "Invalid email or password", Toast.LENGTH_SHORT)
+                            .show()
+                    }
+                }
 
             } else {
                 // If validation fails, show a toast message

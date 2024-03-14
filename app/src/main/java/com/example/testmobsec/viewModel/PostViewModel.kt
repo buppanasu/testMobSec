@@ -31,6 +31,15 @@ class PostViewModel: ViewModel() {
     private val _posts = MutableStateFlow<List<Map<String, Any>>>(emptyList())
     val posts: StateFlow<List<Map<String, Any>>> = _posts
 
+    private val _bandPosts = MutableStateFlow<List<Map<String, Any>>>(emptyList())
+    val bandPosts: StateFlow<List<Map<String, Any>>> = _bandPosts
+
+    private val _followedBandPosts = MutableStateFlow<List<Map<String, Any>>>(emptyList())
+    val followedBandPosts: StateFlow<List<Map<String, Any>>> = _followedBandPosts
+
+    private val _bandFeedbacks = MutableStateFlow<List<Map<String, Any>>>(emptyList())
+    val bandFeedbacks: StateFlow<List<Map<String, Any>>> = _bandFeedbacks
+
     private val _comments = MutableStateFlow<List<Map<String, Any>>>(emptyList())
     val comments: StateFlow<List<Map<String, Any>>> = _comments
     val likedPosts = MutableStateFlow<List<Map<String, Any>>>(emptyList())
@@ -39,7 +48,9 @@ class PostViewModel: ViewModel() {
     private val likesCounts = mutableMapOf<String, MutableStateFlow<Int>>()
     private val commentCounts = mutableMapOf<String, MutableStateFlow<Int>>()
     private val _postsCount = MutableStateFlow(0)
+    private val _bandPostsCount = MutableStateFlow(0)
     val postsCount = _postsCount.asStateFlow()
+    val bandPostsCount = _bandPostsCount.asStateFlow()
 
     private val _selectedPostDetails = MutableStateFlow<Map<String, Any>?>(null)
     val selectedPostDetails = _selectedPostDetails.asStateFlow()
@@ -95,6 +106,67 @@ class PostViewModel: ViewModel() {
         }
 
     }
+    fun fetchPostsForFollowedBands() {
+        viewModelScope.launch {
+            try {
+                val currentUserDocRef = FirebaseAuth.getInstance().currentUser?.uid?.let {
+                    db.collection("users").document(it)
+                } ?: return@launch
+
+                // First, fetch the list of bands the user follows by checking the followers field
+                val followedBandsQuerySnapshot = db.collection("bands")
+                    .whereArrayContains("followers", currentUserDocRef)
+                    .get()
+                    .await()
+
+                val followedBandRefs = followedBandsQuerySnapshot.documents.map { it.reference }
+
+                val postsWithBandNames = mutableListOf<Map<String, Any>>()
+
+                // Process in chunks due to Firestore's limitations
+                followedBandRefs.chunked(10).forEach { chunk ->
+                    val tasks = chunk.map { bandRef ->
+                        db.collection("posts")
+                            .whereEqualTo("bandId", bandRef)
+                            .orderBy("timestamp", Query.Direction.DESCENDING)
+                            .get()
+                    }
+
+                    // Await all tasks and process results
+                    tasks.forEach { task ->
+                        val postsQuerySnapshot = task.await()
+                        for (document in postsQuerySnapshot.documents) {
+                            val postData = document.data as? MutableMap<String, Any> ?: continue
+                            postData["postId"] = document.id
+
+                            val bandRef = postData["bandId"] as DocumentReference
+
+                            // Fetch the user document based on the reference
+                            val bandDoc = bandRef.get().await()
+
+                            // Retrieve the user's name from the user document
+                            val bandName = bandDoc.getString("bandName") ?: "Unknown User"
+
+                            val bandImageUrl = bandDoc.getString("imageUrl") ?: "Unknown User"
+
+
+                            // Add the user's name to the post data
+                            postData["bandName"] = bandName
+                            postData["imageUrl"] = bandImageUrl
+                            postsWithBandNames.add(postData)
+                        }
+                    }
+                }
+
+                // Update LiveData or StateFlow with the new posts
+                _followedBandPosts.value = postsWithBandNames
+            } catch (e: Exception) {
+                Log.e("ViewModel", "Error fetching posts from followed bands", e)
+                _followedBandPosts.value = emptyList()
+            }
+        }
+    }
+
 
     fun fetchPostsFromFollowing() {
         viewModelScope.launch {
@@ -167,6 +239,27 @@ class PostViewModel: ViewModel() {
                 }
         }
     }
+    fun fetchPostsCountForBand(bandIdParam: String? = null) {
+        // Use the provided bandId if available
+        val bandId = bandIdParam ?: return
+
+        // Directly use the bandId to query the posts collection
+        viewModelScope.launch {
+            FirebaseFirestore.getInstance().collection("posts")
+                .whereEqualTo("bandId", FirebaseFirestore.getInstance().collection("bands").document(bandId))
+                .get()
+                .addOnSuccessListener { querySnapshot ->
+                    // Update the posts count for the band
+                    _bandPostsCount.value = querySnapshot.size()
+                }
+                .addOnFailureListener { exception ->
+                    // Handle any errors
+                    println("Error getting band posts count: $exception")
+                    _bandPostsCount.value = 0 // Optionally reset the count or handle the error as needed
+                }
+        }
+    }
+
 
     fun fetchCommentedPosts(userIdParam: String? = null) {
         viewModelScope.launch {
@@ -419,6 +512,57 @@ class PostViewModel: ViewModel() {
 
     }
 
+    fun fetchPostsForBand(bandIdParam: String? = null) {
+        viewModelScope.launch {
+            try {
+                val bandIdToUse = bandIdParam ?: return@launch
+                val bandRef = db.collection("bands").document(bandIdToUse)
+
+                // Query the posts collection for documents where the bandId field matches the bandRef
+                val result: QuerySnapshot = db.collection("posts")
+                    .whereEqualTo("bandId", bandRef) // Use bandRef directly
+                    .orderBy("timestamp", Query.Direction.DESCENDING)
+                    .get()
+                    .await()
+
+                if (result.isEmpty) {
+                    Log.d("PostViewModel", "No posts found for user")
+                } else {
+                    Log.d("PostViewModel", "Fetched ${result.size()} posts for user")
+                }
+
+                // Initialize an empty list to hold the posts with user names
+                val postsWithBandNames = mutableListOf<Map<String, Any>>()
+
+                // Iterate through each document in the result
+                for (document in result.documents) {
+                    val postData = document.data as MutableMap<String, Any>
+                    postData["postId"] = document.id
+                    // Get the user reference from the post
+                    val bandRef = postData["bandId"] as DocumentReference
+
+                    // Fetch the user document based on the reference
+                    val bandDoc = bandRef.get().await()
+
+                    // Retrieve the user's name from the user document
+                    val bandName = bandDoc.getString("bandName") ?: "Unknown User"
+
+                    // Add the user's name to the post data
+                    postData["bandName"] = bandName
+
+                    // Add the modified post data to the list
+                    postsWithBandNames.add(postData)
+                }
+
+                // Update the MutableStateFlow with the modified list of posts
+                _bandPosts.value = postsWithBandNames
+            } catch (e: Exception) {
+                // Handle error
+                Log.e("PostViewModel", "Error fetching posts with user names", e)
+                _bandPosts.value = emptyList()
+            }
+        }
+    }
 
 
     fun fetchPostsForUser(userIdParam: String? = null) {
@@ -528,6 +672,158 @@ class PostViewModel: ViewModel() {
             }
         }
     }
+
+    fun uploadBandPost(
+        bandId: String,
+        content: String,
+        context: Context, // Added context parameter
+        onSuccess: () -> Unit,
+        onFailure: (Exception) -> Unit
+    ) {
+
+
+        val postsCollection = db.collection("posts")
+
+
+        if (userId == null) {
+            CoroutineScope(Dispatchers.Main).launch {
+                Toast.makeText(context, "User must be logged in to create a post.", Toast.LENGTH_SHORT).show()
+            }
+            onFailure(Exception("User not logged in"))
+            return
+        }
+
+        // Create a reference to the user's document in the users collection
+        val userRef = db.collection("users").document(userId)
+
+        val bandRef = db.collection("bands").document(bandId)
+
+
+        // Create a map to represent the post, using the user document reference for the userId
+        val postMap = hashMapOf(
+            "userId" to userRef, // Use this instead of "userId" to store a reference
+            "content" to content,
+            "timestamp" to FieldValue.serverTimestamp(),
+            "bandId" to bandRef
+        )
+
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                postsCollection.add(postMap).await()
+                CoroutineScope(Dispatchers.Main).launch {
+                    onSuccess()
+                }
+            } catch (e: Exception) {
+                CoroutineScope(Dispatchers.Main).launch {
+                    onFailure(e)
+                }
+            }
+        }
+    }
+
+    fun uploadFeedback(
+        bandId: String,
+        feedback: String,
+        context: Context, // Added context parameter for showing toast messages
+        onSuccess: () -> Unit,
+        onFailure: (Exception) -> Unit
+    ) {
+        val feedbackCollection = db.collection("feedback")
+
+        val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
+        if (currentUserId == null) {
+            CoroutineScope(Dispatchers.Main).launch {
+                Toast.makeText(context, "User must be logged in to submit feedback.", Toast.LENGTH_SHORT).show()
+            }
+            onFailure(Exception("User not logged in"))
+            return
+        }
+
+        // Create a reference to the user's document in the users collection
+        val userRef = db.collection("users").document(currentUserId)
+
+        // Create a reference to the band's document in the bands collection
+        val bandRef = db.collection("bands").document(bandId)
+
+        // Create a map to represent the feedback
+        val feedbackMap = hashMapOf(
+            "userId" to userRef,
+            "bandId" to bandRef,
+            "timestamp" to FieldValue.serverTimestamp(),
+            "feedback" to feedback
+        )
+
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                feedbackCollection.add(feedbackMap).await()
+                CoroutineScope(Dispatchers.Main).launch {
+                    onSuccess()
+                }
+            } catch (e: Exception) {
+                CoroutineScope(Dispatchers.Main).launch {
+                    onFailure(e)
+                }
+            }
+        }
+    }
+
+    fun fetchFeedbackForBand(bandIdParam: String? = null) {
+        viewModelScope.launch {
+            try {
+                val bandIdToUse = bandIdParam ?: return@launch
+                val bandRef = db.collection("bands").document(bandIdToUse)
+
+                // Query the feedbacks collection for documents where the bandId field matches the bandRef
+                val result = db.collection("feedback")
+                    .whereEqualTo("bandId", bandRef) // Use bandRef directly
+                    .orderBy("timestamp", Query.Direction.DESCENDING)
+                    .get()
+                    .await()
+
+                if (result.isEmpty) {
+                    Log.d("FeedbackViewModel", "No feedback found for band")
+                } else {
+                    Log.d("FeedbackViewModel", "Fetched ${result.size()} feedbacks for band")
+                }
+
+                // Initialize an empty list to hold the feedbacks with user names
+                val feedbacksWithUserNames = mutableListOf<Map<String, Any>>()
+
+                // Iterate through each document in the result
+                for (document in result.documents) {
+                    val feedbackData = document.data as MutableMap<String, Any>
+                    feedbackData["feedbackId"] = document.id
+                    // Get the user reference from the feedback
+                    val userRef = feedbackData["userId"] as DocumentReference
+
+                    // Fetch the user document based on the reference
+                    val userDoc = userRef.get().await()
+
+                    // Retrieve the user's name from the user document
+                    val userName = userDoc.getString("name") ?: "Unknown User"
+
+                    // Add the user's name to the feedback data
+                    feedbackData["userName"] = userName
+
+                    // Optionally, add more information or transform data here
+
+                    // Add the modified feedback data to the list
+                    feedbacksWithUserNames.add(feedbackData)
+                }
+
+                // Update the MutableStateFlow with the modified list of feedbacks
+                _bandFeedbacks.value = feedbacksWithUserNames
+            } catch (e: Exception) {
+                // Handle error
+                Log.e("FeedbackViewModel", "Error fetching feedback for band", e)
+                _bandFeedbacks.value = emptyList()
+            }
+        }
+    }
+
+
+
+
 }
 
 
