@@ -49,9 +49,11 @@ fun ChatScreen(
     val chats by chatViewModel.chats.collectAsState()
     val userName by chatViewModel.userName.collectAsState()
     val currentName by chatViewModel.currentName.collectAsState()
+    val userBandId by chatViewModel.userBandId.collectAsState()
     LaunchedEffect(true){
         chatViewModel.fetchNameById(id)
         chatViewModel.fetchCurrentUserName()
+        chatViewModel.fetchUserRoleAndBand()
     }
 
 
@@ -70,7 +72,7 @@ fun ChatScreen(
                 userName?.let {
                     currentName?.let { it1 ->
                         ChatMessagesUI(chats,id, it, it1,
-                            chatViewModel, Modifier.padding(paddingValues))
+                            chatViewModel,userBandId, Modifier.padding(paddingValues))
                     }
                 }
             }
@@ -79,7 +81,7 @@ fun ChatScreen(
     }
 }
 @Composable
-fun ChatMessagesUI(chats: List<Chat>,id: String,userName:String,currentName:String, chatViewModel: ChatViewModel, modifier: Modifier = Modifier) {
+fun ChatMessagesUI(chats: List<Chat>,id: String,userName:String,currentName:String, chatViewModel: ChatViewModel,userBandId: String?, modifier: Modifier = Modifier) {
     val listState = rememberLazyListState()
 //    val scope = rememberCoroutineScope()
 
@@ -90,7 +92,8 @@ fun ChatMessagesUI(chats: List<Chat>,id: String,userName:String,currentName:Stri
     }
 
     val currentUserID = FirebaseAuth.getInstance().currentUser?.uid ?: return
-    Box(modifier = modifier.fillMaxSize()) {
+    Box(
+        modifier = modifier.fillMaxSize()) {
         Column {
             // Display chat messages in a LazyColumn that fills the available space but leaves room for the input field
             LazyColumn(
@@ -103,7 +106,11 @@ fun ChatMessagesUI(chats: List<Chat>,id: String,userName:String,currentName:Stri
 //                    val currentUserID = FirebaseAuth.getInstance().currentUser?.uid ?: return@items
                     // Chat message UI
                     Box(
-                        contentAlignment = if (chat.senderId == currentUserID) Alignment.CenterEnd else Alignment.CenterStart,
+                        contentAlignment = when {
+                            chat.senderId == currentUserID -> Alignment.CenterEnd
+                            chat.senderId == userBandId -> Alignment.CenterEnd // Treat band messages the same as user messages
+                            else -> Alignment.CenterStart
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(4.dp)

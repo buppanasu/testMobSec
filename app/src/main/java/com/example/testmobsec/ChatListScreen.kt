@@ -48,6 +48,7 @@ import com.example.testmobsec.viewModel.ProfileViewModel
 import androidx.compose.material3.Tab
 import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
+import com.example.testmobsec.viewModel.ChatViewModel
 
 
 @Composable
@@ -57,12 +58,17 @@ fun ChatListScreen(navController: NavController, bandViewModel: BandViewModel = 
     var searchQuery by remember { mutableStateOf("") }
     val allBands by bandViewModel.allBands.collectAsState(initial = emptyList())
     val profileViewModel: ProfileViewModel = viewModel()
+
     val followedUsers by profileViewModel.followedUsers.collectAsState()
+    val userRole by profileViewModel.currentUserRole.collectAsState()
+    val chatStarters by profileViewModel.chatStarters.collectAsState()
 
     // Fetch all bands when the screen is first composed
     LaunchedEffect(Unit) {
         bandViewModel.fetchAllBands()
+        profileViewModel.fetchCurrentUserRole()
         profileViewModel.fetchUserDetailsFromFollowing()
+        profileViewModel.fetchBandChatStarters()
 
     }
 
@@ -84,39 +90,60 @@ fun ChatListScreen(navController: NavController, bandViewModel: BandViewModel = 
         bottomBar = { BottomAppBarContent(navController) }
     ) { innerPadding ->
         Column(modifier = Modifier.padding(innerPadding)) {
-            // Search Field
-            OutlinedTextField(
-                value = searchQuery,
-                onValueChange = { searchQuery = it },
-                label = { Text("Search") },
-                singleLine = true,
-                keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Search),
-                modifier = Modifier.fillMaxWidth().padding(16.dp)
-            )
 
-            // Tabs for selection
-            TabRow(selectedTabIndex = selectedTabIndex) {
-                Tab(
-                    selected = selectedTabIndex == 0,
-                    onClick = { selectedTabIndex = 0 },
-                    text = { Text("Followed Bands") }
+            if(userRole=="ARTIST"){
+                DisplayChatStarters(chatStarters, navController)
+            }
+            else{
+                // Search Field
+                OutlinedTextField(
+                    value = searchQuery,
+                    onValueChange = { searchQuery = it },
+                    label = { Text("Search") },
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Search),
+                    modifier = Modifier.fillMaxWidth().padding(16.dp)
                 )
-                Tab(
-                    selected = selectedTabIndex == 1,
-                    onClick = { selectedTabIndex = 1 },
-                    text = { Text("Followed Users") }
-                )
+
+                // Tabs for selection
+                TabRow(selectedTabIndex = selectedTabIndex) {
+                    Tab(
+                        selected = selectedTabIndex == 0,
+                        onClick = { selectedTabIndex = 0 },
+                        text = { Text("Followed Bands") }
+                    )
+                    Tab(
+                        selected = selectedTabIndex == 1,
+                        onClick = { selectedTabIndex = 1 },
+                        text = { Text("Followed Users") }
+                    )
+                }
+
+                // Display content based on selected tab
+                when (selectedTabIndex) {
+                    0 -> DisplayBands(filteredBands, navController)
+                    1 -> DisplayFollowedUsers(filteredUsers, navController)
+                }
+
             }
 
-            // Display content based on selected tab
-            when (selectedTabIndex) {
-                0 -> DisplayBands(filteredBands, navController)
-                1 -> DisplayFollowedUsers(filteredUsers, navController)
-            }
         }
     }
 }
 
+@Composable
+fun DisplayChatStarters(chatStarters: List<Map<String, Any>>, navController: NavController) {
+
+
+    LazyColumn {
+        items(chatStarters) { user ->
+            val userId = user["userId"] as String
+            val userName = user["name"] as String? ?: "Unknown User"
+
+            UserItem(userId, userName, navController)
+        }
+    }
+}
 
 @Composable
 fun DisplayFollowedUsers(users: List<Map<String, Any>>, navController: NavController) {

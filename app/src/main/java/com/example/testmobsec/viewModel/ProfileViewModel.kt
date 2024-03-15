@@ -49,6 +49,9 @@ class ProfileViewModel() : ViewModel() {
     private val _name = MutableStateFlow<String?>(null)
     val name = _name.asStateFlow()
 
+    private val _currentUserRole = MutableStateFlow<String?>(null)
+    val currentUserRole = _currentUserRole.asStateFlow()
+
     private val _userName = MutableStateFlow<String?>(null)
     val userName: StateFlow<String?> = _userName
 
@@ -69,11 +72,56 @@ class ProfileViewModel() : ViewModel() {
 
     private val _email = MutableStateFlow<String?>(null)
     val email = _email.asStateFlow()
+    private val _chatStarters = MutableStateFlow<List<Map<String, Any>>>(emptyList())
+    val chatStarters: StateFlow<List<Map<String, Any>>> = _chatStarters
 
     private val authStateListener = FirebaseAuth.AuthStateListener { firebaseAuth ->
         currentUser = firebaseAuth.currentUser
         // When the auth state changes, load user profile information
         loadUserProfile()
+    }
+
+    fun fetchBandChatStarters() {
+        val currentUserId = FirebaseAuth.getInstance().currentUser?.uid ?: return
+
+        viewModelScope.launch {
+            try {
+                val userBandsSnapshot = firestore.collection("bands")
+                    .whereArrayContains("members", currentUserId)
+                    .get()
+                    .await()
+
+                val bandIds = userBandsSnapshot.documents.mapNotNull { it.id }
+
+                val senderIds = mutableSetOf<String>()
+                bandIds.forEach { bandId ->
+                    val bandChatsSnapshot = firestore.collection("chat")
+                        .whereEqualTo("receiverId", bandId)
+                        .get()
+                        .await()
+
+                    senderIds.addAll(bandChatsSnapshot.documents.mapNotNull { it.getString("senderId") })
+                }
+
+                val chatStarterDetails = senderIds.map { senderId ->
+                    Log.d("ChatViewModel",senderId)
+                    async {
+                        firestore.collection("users").document(senderId).get().await().let { doc ->
+                            mapOf(
+                                "userId" to senderId,
+                                "name" to (doc.getString("name") ?: "Unknown User")
+                            )
+
+                        }
+                    }
+                }.awaitAll()
+
+
+                _chatStarters.value = chatStarterDetails
+            } catch (e: Exception) {
+                Log.e("ChatViewModel", "Error fetching band chat starters", e)
+            }
+        }
     }
 
     fun checkIfFollowing(targetUserId: String) {
@@ -106,6 +154,21 @@ class ProfileViewModel() : ViewModel() {
             }
         }
     }
+
+    fun fetchCurrentUserRole() {
+        val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
+        val db = FirebaseFirestore.getInstance()
+
+        db.collection("users").document(userId).get().addOnSuccessListener { documentSnapshot ->
+            if (documentSnapshot.exists()) {
+                val role = documentSnapshot.getString("role") ?: "USER" // Default to "USER" if not found
+                _currentUserRole.value = role
+            }
+        }.addOnFailureListener {
+            Log.e("ProfileViewModel", "Error fetching user role", it)
+        }
+    }
+
 
     fun fetchUserDetailsFromFollowing() {
         viewModelScope.launch {

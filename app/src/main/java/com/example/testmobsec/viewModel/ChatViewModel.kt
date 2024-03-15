@@ -7,14 +7,17 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.example.testmobsec.util.Chat
+import com.google.android.gms.tasks.Tasks
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.DocumentReference
+import com.google.firebase.firestore.DocumentSnapshot
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
@@ -31,16 +34,115 @@ class ChatViewModel(private val receiverId: String) : ViewModel() {
     private val _currentName = MutableStateFlow<String?>(null)
     val currentName: StateFlow<String?> = _currentName
 
+    private val _userRole = MutableStateFlow<String?>(null)
+    val userRole: StateFlow<String?> = _userRole
+
+    private val _userBandId = MutableStateFlow<String?>(null)
+    val userBandId: StateFlow<String?> = _userBandId
+
+
+
 
     init {
 
 
-        fetchChats(receiverId)
+        fetchUserRoleAndBand()
+//        fetchChats()
+        setupChatFetching()
+
 
     }
 
+    // Assuming you have a ViewModel or Repository
 
-    private fun fetchChats(receiverId: String) {
+    private fun setupChatFetching() {
+        viewModelScope.launch {
+            _userRole.combine(_userBandId) { role, bandId ->
+                Pair(role, bandId)
+            }.collect { (role, bandId) ->
+                when (role) {
+                    "ARTIST" -> {
+                        if (bandId != null) fetchBandChats(bandId)
+                        else Log.d("ChatViewModel", "Artist without a bandId.")
+                    }
+                    else -> fetchUserChats(receiverId)
+                }
+            }
+        }
+    }
+
+
+
+    fun fetchUserRoleAndBand() {
+        val userId = auth.currentUser?.uid ?: return
+        Log.d("ChatViewModel", "Fetching user role and band for userID: $userId")
+
+        viewModelScope.launch {
+            try {
+                val userSnapshot = db.collection("users").document(userId).get().await()
+                _userRole.value = userSnapshot.getString("role")
+                Log.d("ChatViewModel", "User role: ${_userRole.value}")
+
+                if (_userRole.value == "ARTIST") {
+                    val bandSnapshot = db.collection("bands")
+                        .whereArrayContains("members", userId)
+                        .get()
+                        .await()
+
+                    // Since a member can only be part of one band, take the first result
+                    _userBandId.value = bandSnapshot.documents.firstOrNull()?.id
+                    Log.d("ChatViewModel", "Band ID for artist: ${_userBandId.value}")
+                }
+            } catch (e: Exception) {
+                Log.e("ChatViewModel", "Error fetching user role and band", e)
+            }
+        }
+    }
+
+    private fun fetchChats() {
+        viewModelScope.launch {
+            when (_userRole.value) {
+                "ARTIST" -> _userBandId.value?.let { bandId ->
+                    Log.d("BandID",bandId)
+                    fetchBandChats(bandId)
+                }
+                else -> fetchUserChats(receiverId)
+            }
+        }
+    }
+
+    private fun fetchBandChats(bandId: String) {
+
+        Log.d("ChatViewModel", "Fetching chats for bandId: $bandId with receiverId: $receiverId")
+
+        // Listen to sender's messages
+        val senderPath = db.collection("chat")
+            .whereEqualTo("senderId", bandId)
+            .whereEqualTo("receiverId", receiverId)
+            .addSnapshotListener { snapshot, e ->
+                if (e != null || snapshot == null) {
+                    Log.w("ChatViewModel", "Listen failed.", e)
+                    return@addSnapshotListener
+                }
+                updateChats(snapshot.toObjects(Chat::class.java))
+            }
+
+        // Listen to receiver's messages
+        val receiverPath = db.collection("chat")
+            .whereEqualTo("senderId", receiverId)
+            .whereEqualTo("receiverId", bandId)
+            .addSnapshotListener { snapshot, e ->
+                if (e != null || snapshot == null) {
+                    Log.w("ChatViewModel", "Listen failed.", e)
+                    return@addSnapshotListener
+                }
+                val chats = snapshot.toObjects(Chat::class.java)
+                Log.d("ChatViewModel", "Fetched ${chats.size} chats as receiver.")
+                updateChats(snapshot.toObjects(Chat::class.java))
+            }
+    }
+
+    private fun fetchUserChats(receiverId: String) {
         val senderId = FirebaseAuth.getInstance().currentUser?.uid ?: return
 
         // Listen to sender's messages
@@ -123,15 +225,28 @@ class ChatViewModel(private val receiverId: String) : ViewModel() {
     fun sendChat(message: Chat) {
         viewModelScope.launch {
             try {
-                val db = FirebaseFirestore.getInstance()
-                db.collection("chat").add(message).await()
+                // Automatically determine if the message should be sent as a band based on the user's role
+                if (_userRole.value == "ARTIST" && _userBandId.value != null) {
+                    val bandId = _userBandId.value!!
+                    // Since we're in the artist role, fetch the band's name
+                    val bandSnapshot = db.collection("bands").document(bandId).get().await()
+                    val bandName = bandSnapshot.getString("bandName") ?: "Unknown Band"
 
-                // You could update the UI state here to indicate the message was sent successfully
+                    // Update the message to be sent from the band's perspective
+                    message.senderName = bandName
+                    message.senderId = bandId
+                }
+                // If not an artist, senderName and senderId remain as the user's
+
+                // Send the message
+                db.collection("chat").add(message).await()
             } catch (e: Exception) {
-                // Handle error: update UI state to show error message, log error, etc.
+                Log.e("ChatViewModel", "Error sending chat", e)
             }
         }
     }
+
+
 }
 
 
