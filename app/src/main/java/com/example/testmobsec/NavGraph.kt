@@ -31,6 +31,8 @@ sealed class Screen(val route:String){
     data object SearchScreen: Screen(route = "search_screen")
     data object UploadScreen: Screen(route = "upload_screen")
     data object EditProfileScreen: Screen(route = "edit_profile_screen")
+
+    data object ChatListScreen: Screen(route = "chat_list_screen")
     data object OthersBandScreen: Screen(route = "other_band_screen")
 
     data object PostScreen: Screen(route = "post_screen")
@@ -86,6 +88,11 @@ fun NavGraph(
                 navController = navController
             )
         }
+        composable(Screen.ChatListScreen.route){
+            ChatListScreen(
+                navController = navController
+            )
+        }
         composable(
             route = Screen.BandScreen.route,
                     arguments = listOf(navArgument("bandId") { type = NavType.StringType })
@@ -103,6 +110,14 @@ fun NavGraph(
         ) { backStackEntry ->
             val bandId = backStackEntry.arguments?.getString("bandId") ?: return@composable
             OtherBandScreen(navController, bandId, bandViewModel)
+        }
+
+        composable(
+            "chat_screen/{bandId}",
+            arguments = listOf(navArgument("bandId") { type = NavType.StringType })
+        ) { backStackEntry ->
+            val bandId = backStackEntry.arguments?.getString("bandId") ?: return@composable
+            ChatScreen(navController, bandId)
         }
 
         composable(

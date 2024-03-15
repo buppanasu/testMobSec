@@ -191,6 +191,7 @@ class BandViewModel : ViewModel() {
         }
     }
 
+
     fun fetchBandMemberNames(members: List<String>) {
         viewModelScope.launch {
             val names = mutableListOf<String>()

@@ -25,6 +25,8 @@ import java.util.Locale
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.firestore.DocumentReference
 import com.google.firebase.firestore.FieldValue
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.tasks.await
 
@@ -34,6 +36,9 @@ class ProfileViewModel() : ViewModel() {
     private var storage = FirebaseStorage.getInstance()
     private val _profileImageUrls = MutableStateFlow<Map<String, String?>>(emptyMap())
     val profileImageUrls: StateFlow<Map<String, String?>> = _profileImageUrls
+    val userId = auth.currentUser?.uid
+    private val _followedUsers = MutableStateFlow<List<Map<String, Any>>>(emptyList())
+    val followedUsers: StateFlow<List<Map<String, Any>>> = _followedUsers
     var currentUser by mutableStateOf(auth.currentUser)
         private set
 
@@ -101,6 +106,51 @@ class ProfileViewModel() : ViewModel() {
             }
         }
     }
+
+    fun fetchUserDetailsFromFollowing() {
+        viewModelScope.launch {
+            try {
+                val currentUserDocRef = userId?.let { firestore.collection("users").document(it) } ?: return@launch
+                val currentUserDoc = currentUserDocRef.get().await()
+                val followingRefs = currentUserDoc.get("following") as? List<DocumentReference> ?: listOf()
+
+                val userDetailsList = mutableListOf<Map<String, Any>>()
+
+                // Filter out band references; keep only user references
+                val userRefs = followingRefs.filter { it.path.startsWith("users/") }
+
+                // Process in chunks to avoid hitting Firestore's in-query limits
+                userRefs.chunked(10).forEach { chunk ->
+                    val tasks = chunk.map { userRef ->
+                        async {
+                            userRef.get().await()
+                        }
+                    }
+
+                    // Await all tasks and compile the user details
+                    tasks.awaitAll().forEach { userSnapshot ->
+                        if (userSnapshot.exists()) {
+                            val userData = userSnapshot.data?.plus("userId" to userSnapshot.id) ?: mapOf("userId" to userSnapshot.id)
+                            userDetailsList.add(userData)
+                        }
+                    }
+                }
+
+                // Update the StateFlow with the new user details
+                _followedUsers.value = userDetailsList
+            } catch (e: Exception) {
+                Log.e("ViewModel", "Error fetching user details from following", e)
+                _followedUsers.value = emptyList()
+            }
+        }
+    }
+
+
+
+
+
+
+
 
     fun fetchFollowCounts(userIdParam: String? = null) {
         val userIdToUse = userIdParam ?: auth.currentUser?.uid

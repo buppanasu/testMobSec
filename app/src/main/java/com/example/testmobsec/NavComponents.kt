@@ -8,6 +8,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.ChatBubbleOutline
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Person
@@ -85,6 +86,8 @@ fun TopAppBarContent(navController: NavController) {
         currentRoute?.startsWith("searchband_screen") == true -> "Search Band"
         currentRoute?.startsWith("band_screen") == true -> "Own Band"
         currentRoute?.startsWith("other_band_screen") == true -> "Other Band"
+        currentRoute?.startsWith("chat_list_screen") == true -> "Chats"
+        currentRoute?.startsWith("chat_screen") == true -> "Chat"
         currentRoute?.startsWith("edit_profile_screen") == true -> "Edit Profile Details"
         currentRoute?.startsWith("comment_screen") == true -> "Comments"
         currentRoute?.startsWith("postDetails_screen") == true -> "Post Details"
@@ -145,6 +148,13 @@ fun TopAppBarContent(navController: NavController) {
                     }
                 } else if(currentRoute.startsWith("othersProfile_screen")){
                     // No action if it starts with "othersProfile_screen"
+                }else if(currentRoute.startsWith("home_screen")){
+                    IconButton(onClick = { navController.navigate("chat_list_screen") }) {
+                        Icon(
+                            imageVector = Icons.Filled.ChatBubbleOutline,
+                            contentDescription = "Chat"
+                        )
+                    }
                 }
                 } else{
                     IconButton(onClick = { navController.navigate("profile_screen") }) {

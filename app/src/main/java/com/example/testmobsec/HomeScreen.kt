@@ -360,38 +360,7 @@ fun FollowingPostsSection(postsViewModel: PostViewModel, profileViewModel:Profil
                     }
 
                     1 -> {
-//                        Column{
-//                            // Nested TabRow for the "Following" tab
-//                            TabRow(selectedTabIndex = selectedFollowingTab) {
-//
-//                                Tab(
-//                                    selected = selectedFollowingTab == 0,
-//                                    onClick = { selectedFollowingTab = 0 },
-//                                    text = { Text("Users") }
-//                                )
-//                                Tab(
-//                                    selected = selectedFollowingTab == 1,
-//                                    onClick = { selectedFollowingTab = 1 },
-//                                    text = { Text("Bands") }
-//                                )
-//                            }
-//
-//                        }
-//
-//
-//                        Spacer(modifier = Modifier.height(30.dp))
-//
-//                        // Display content based on the nested tab selection
-//                        when (selectedFollowingTab) {
-//                            0 -> {
-//                                FollowingPostsSection(postsViewModel, profileViewModel, navController)
-//                            }
-//
-//                            1 -> {
-//
-//                                FollowingBandsSection(postsViewModel, navController, bandViewModel)
-//                            }
-//                        }
+
                         FollowingBandsSection(postsViewModel, navController, bandViewModel)
                         Divider()
 
@@ -422,8 +391,6 @@ fun FollowingPostsSection(postsViewModel: PostViewModel, profileViewModel:Profil
 @Composable
 fun FollowingBandsSection(postsViewModel: PostViewModel, navController: NavController, bandViewModel: BandViewModel) {
 
-//    postsViewModel.fetchPostsFromFollowing()
-
     bandViewModel.fetchBandsCurrentUserFollows()
     val followedBandPosts by  postsViewModel.followedBandPosts.collectAsState(initial = emptyList())
     postsViewModel.fetchPostsForFollowedBands()
@@ -453,7 +420,6 @@ fun FollowingBandsSection(postsViewModel: PostViewModel, navController: NavContr
                 val imageUrl = band["imageUrl"] as? String ?: "No Content"
                 val bandId = band["bandId"] as? String ?: "No Content"
 
-                                // This is a placeholder for a band, use actual data here
                 FollowedBandItem(
                     bandName = bandName,
                     imageUrl = imageUrl,
@@ -467,9 +433,10 @@ fun FollowingBandsSection(postsViewModel: PostViewModel, navController: NavContr
                 val bandName = postMap["bandName"] as? String ?: "No Content"
                 val content = postMap["content"] as? String ?: "No Content"
                 val imageUrl = postMap["imageUrl"] as? String ?: "No Content"
-                val bandId = postMap["bandId"] as? String ?: "No Content"
                 val timestamp = postMap["timestamp"]
                 val postId = postMap["postId"] as String
+                val bandDocRef = postMap["bandId"] as? DocumentReference
+                val bandId = bandDocRef?.id.toString()
                 val isLiked by postsViewModel.isPostLikedByUser(postId)
                     .collectAsState(initial = false)
                 val likesCountFlow = postsViewModel.getLikesCountFlow(postId)
