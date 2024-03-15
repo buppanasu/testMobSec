@@ -1,7 +1,6 @@
-package com.example.testmobsec
-
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
@@ -38,6 +37,9 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavController
 import coil.compose.rememberAsyncImagePainter
 import coil.request.ImageRequest
+import com.example.testmobsec.BottomAppBarContent
+import com.example.testmobsec.R
+import com.example.testmobsec.TopAppBarContent
 import com.example.testmobsec.util.Band
 import com.example.testmobsec.viewModel.BandViewModel
 

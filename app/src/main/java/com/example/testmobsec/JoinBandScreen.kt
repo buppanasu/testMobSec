@@ -18,6 +18,7 @@ import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.collectLatest
+import kotlinx.coroutines.tasks.await
 
 @Composable
 fun JoinBandScreen(navController: NavController = rememberNavController()) {
@@ -108,30 +109,41 @@ fun JoinBandScreen(navController: NavController = rememberNavController()) {
 
 @Composable
 fun BandDetailsDialog(band: Band, onDismiss: () -> Unit, onJoinClick: () -> Unit) {
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text("Band Details") },
-        text = {
-            Column {
-                Text("Band Name: ${band.bandName}")
-                Text("Members:")
-                band.members.forEach { memberId ->
-                    // Fetch member details from users collection if necessary
-                    Text(memberId)
+    var memberNames by remember { mutableStateOf<List<String>?>(null) }
+
+    // A side effect to fetch member names when the dialog is shown
+    LaunchedEffect(band) {
+        memberNames = getUserNames(band.members)
+    }
+
+    if (memberNames != null) {
+        AlertDialog(
+            onDismissRequest = onDismiss,
+            title = { Text("Band Details") },
+            text = {
+                Column {
+                    Text("Band Name: ${band.bandName}")
+                    Text("Members:")
+                    memberNames!!.forEach { name ->
+                        Text(name)
+                    }
+                }
+            },
+            confirmButton = {
+                Button(onClick = onJoinClick) {
+                    Text("Join Band")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = onDismiss) {
+                    Text("Close")
                 }
             }
-        },
-        confirmButton = {
-            Button(onClick = onJoinClick) {
-                Text("Join Band")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Close")
-            }
-        }
-    )
+        )
+    } else {
+        // Optionally show a progress indicator while loading
+        CircularProgressIndicator()
+    }
 }
 
 @Composable
@@ -162,4 +174,13 @@ fun requestToJoinBand(bandId: String, userId: String) {
             // Handle failure to send join request
             Log.e("JoinBandScreen", "Error sending join request", e)
         }
+}
+
+
+suspend fun getUserNames(userIds: List<String>): List<String> {
+    val firestore = FirebaseFirestore.getInstance()
+    return userIds.mapNotNull { userId ->
+        val userDoc = firestore.collection("users").document(userId).get().await()
+        userDoc.getString("name")
+    }
 }
