@@ -77,8 +77,7 @@ fun ChatScreen(
                 }
             }
 
-                // Content of your screen
-    }
+                    }
 }
 @Composable
 fun ChatMessagesUI(chats: List<Chat>,id: String,userName:String,currentName:String, chatViewModel: ChatViewModel,userBandId: String?, modifier: Modifier = Modifier) {

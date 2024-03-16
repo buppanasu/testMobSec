@@ -82,8 +82,12 @@ fun ChatListScreen(navController: NavController, bandViewModel: BandViewModel = 
         userName.contains(searchQuery, ignoreCase = true)
     }
 
-    // Assuming you're calling fetchAllBands somewhere to fill allBands StateFlow
-    // For instance, bandViewModel.fetchAllBands() could be called on composable's first composition.
+
+    val filteredChatStarters = chatStarters.filter {
+            user ->
+        val userName = user["name"] as? String ?: ""
+        userName.contains(searchQuery, ignoreCase = true)
+    }
 
     Scaffold(
         topBar = { TopAppBarContent(navController) },
@@ -91,19 +95,20 @@ fun ChatListScreen(navController: NavController, bandViewModel: BandViewModel = 
     ) { innerPadding ->
         Column(modifier = Modifier.padding(innerPadding)) {
 
+            // Search Field
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                label = { Text("Search") },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Search),
+                modifier = Modifier.fillMaxWidth().padding(16.dp)
+            )
             if(userRole=="ARTIST"){
-                DisplayChatStarters(chatStarters, navController)
+                DisplayChatStarters(filteredChatStarters, navController)
             }
             else{
-                // Search Field
-                OutlinedTextField(
-                    value = searchQuery,
-                    onValueChange = { searchQuery = it },
-                    label = { Text("Search") },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Search),
-                    modifier = Modifier.fillMaxWidth().padding(16.dp)
-                )
+
 
                 // Tabs for selection
                 TabRow(selectedTabIndex = selectedTabIndex) {
