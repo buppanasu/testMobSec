@@ -66,18 +66,17 @@ fun ChatScreen(
         bottomBar = { BottomAppBarContent(navController) }
     ) {
             paddingValues->
-            Column {
+        Column {
 
 
-                userName?.let {
-                    currentName?.let { it1 ->
-                        ChatMessagesUI(chats,id, it, it1,
-                            chatViewModel,userBandId, Modifier.padding(paddingValues))
-                    }
+            userName?.let {
+                currentName?.let { it1 ->
+                    ChatMessagesUI(chats,id, it, it1,
+                        chatViewModel,userBandId, Modifier.padding(paddingValues))
                 }
             }
+        }
 
-                // Content of your screen
     }
 }
 @Composable
@@ -178,7 +177,6 @@ fun ChatMessagesUI(chats: List<Chat>,id: String,userName:String,currentName:Stri
 
 
 }
-
 
 
 

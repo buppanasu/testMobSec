@@ -2,9 +2,11 @@ package com.example.testmobsec
 
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -83,240 +85,82 @@ fun HomeScreen(navController: NavController = rememberNavController()) {
         }
     }
 
-
 @Composable
-fun HomePostsSection(postsViewModel: PostViewModel, profileViewModel:ProfileViewModel, navController: NavController){
+fun HomePostsSection(postsViewModel: PostViewModel, profileViewModel: ProfileViewModel, navController: NavController) {
     val posts by postsViewModel.posts.collectAsState(initial = emptyList())
     postsViewModel.fetchPostsForHome()
     val profileImageUrls by profileViewModel.profileImageUrls.collectAsState()
 
-
-
-    // Display posts in the first tab
     LazyColumn {
         items(posts) { postMap ->
             val userDocRef = postMap["userId"] as? DocumentReference
             val postId = postMap["postId"] as String
-            val likesCountFlow = postsViewModel.getLikesCountFlow(postId)
-            val likesCount by likesCountFlow.collectAsState()
-            val commentsCountFlow = postsViewModel.getCommentsCountFlow(postId)
-            val commentsCount by commentsCountFlow.collectAsState()
+            val likesCount by postsViewModel.getLikesCountFlow(postId).collectAsState()
+            val commentsCount by postsViewModel.getCommentsCountFlow(postId).collectAsState()
 
             val userId = userDocRef?.id.toString()
             LaunchedEffect(userId) {
                 profileViewModel.fetchProfileImageUrlByUserId(userId)
             }
-            val name = postMap["userName"] as? String?: "No Content"
+            val name = postMap["userName"] as? String ?: "No Content"
             val content = postMap["content"] as? String ?: "No Content"
             val timestamp = postMap["timestamp"]
             val imageUrl = profileImageUrls[userId]
 
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(8.dp)
-                    .clickable {
-                        navController.navigate("postDetails_screen/$postId")
-                    },
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-
-
-                if (imageUrl != null) {
-
-                    // Display the image from the URL
-                    Image(
-                        painter = rememberAsyncImagePainter(imageUrl),
-                        contentDescription = "Profile Picture",
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            .clickable {
-                                // Navigate to OthersProfileScreen with userId
-                                navController.navigate("othersProfile_screen/$userId")
-                            }
-                    )
-                } else {
-                    // Placeholder or default image
-                    Icon(Icons.Default.AccountCircle, contentDescription = "Default Profile", modifier = Modifier
-                        .size(40.dp)
-                        .clickable {
-                            // Navigate to OthersProfileScreen with userId
-                            navController.navigate("othersProfile_screen/$userId")
-                        })
-                }
-
-                Column(
-                    modifier = Modifier
-                        .weight(1f)
-                        .padding(8.dp)
-                ) {
-
-
-                    Text(text = name, fontWeight = FontWeight.Bold,
-                        style = TextStyle(fontSize = 18.sp)
-                    )
-                    Divider()
-                    Text(text = content, style = TextStyle(fontSize = 14.sp))
-                    Text(text = formatDate(timestamp), style = TextStyle(fontSize = 12.sp))
-                    Spacer(modifier = Modifier.height(4.dp))
-
-                }
-
-                val hasCommented by postsViewModel.hasUserCommented(postId).collectAsState(
-                    initial = false
+            if (timestamp != null) {
+                PostItem(
+                    imageUrl = imageUrl,
+                    name = name,
+                    content = content,
+                    timestamp = timestamp,
+                    commentsCount = commentsCount,
+                    likesCount = likesCount,
+                    userId = userId,
+                    postId = postId,
+                    navController = navController,
+                    postsViewModel = postsViewModel
                 )
-                val commentedIconColor = if(hasCommented) Color.Magenta else Color.Gray
-                IconButton(onClick = { navController.navigate("comment_screen/$postId") }) {
-                    Icon(Icons.Filled.Comment, contentDescription = "Comment", tint = commentedIconColor)
-                }
-                if (commentsCount > 0) {
-                    Text(text = "$commentsCount")
-                }
-
-                val isLiked by postsViewModel.isPostLikedByUser(postId).collectAsState(initial = false)
-                val likeIconColor = if (isLiked) Color.Blue else Color.Gray
-                IconButton(onClick = { postsViewModel.toggleLike(postId) }) {
-                    Icon(Icons.Filled.ThumbUp, contentDescription = "Like", tint = likeIconColor)
-                }
-                // Conditional likes count text
-                if (likesCount > 0) {
-                    Text(text = "$likesCount")
-                }
             }
-            Divider()
         }
     }
 }
+
 @Composable
-fun FollowingPostsSection(postsViewModel: PostViewModel, profileViewModel:ProfileViewModel, navController: NavController) {
+fun FollowingPostsSection(
+    postsViewModel: PostViewModel,
+    profileViewModel: ProfileViewModel,
+    navController: NavController
+) {
     val posts by postsViewModel.posts.collectAsState(initial = emptyList())
     postsViewModel.fetchPostsFromFollowing()
     val profileImageUrls by profileViewModel.profileImageUrls.collectAsState()
-    Column {
 
-        Text(
-            text = "Users you are following",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold
-        )
-        Divider()
+    LazyColumn {
+        items(posts) { postMap ->
+            val postId = postMap["postId"] as String
+            val userId = (postMap["userId"] as? DocumentReference)?.id.toString()
+            val name = postMap["userName"] as? String ?: "No Content"
+            val content = postMap["content"] as? String ?: "No Content"
+            val timestamp = postMap["timestamp"]
+            val imageUrl = profileImageUrls[userId]
+            val likesCount by postsViewModel.getLikesCountFlow(postId).collectAsState()
+            val commentsCount by postsViewModel.getCommentsCountFlow(postId).collectAsState()
 
-
-
-        // Display posts in the first tab
-        LazyColumn {
-
-            items(posts) { postMap ->
-                val userDocRef = postMap["userId"] as? DocumentReference
-                val postId = postMap["postId"] as String
-                val likesCountFlow = postsViewModel.getLikesCountFlow(postId)
-                val likesCount by likesCountFlow.collectAsState()
-                val commentsCountFlow = postsViewModel.getCommentsCountFlow(postId)
-                val commentsCount by commentsCountFlow.collectAsState()
-                val userId = userDocRef?.id.toString()
-                LaunchedEffect(userId) {
-                    profileViewModel.fetchProfileImageUrlByUserId(userId)
-                }
-                val name = postMap["userName"] as? String ?: "No Content"
-                val content = postMap["content"] as? String ?: "No Content"
-                val timestamp = postMap["timestamp"]
-                val imageUrl = profileImageUrls[userId]
-
-
-                //Divider(modifier = Modifier.height(5.dp), color = Color.LightGray)
-
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(8.dp)
-                        .clickable {
-                            navController.navigate("postDetails_screen/$postId")
-                        },
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-//                Log.d("PROFILE SECTION", imageUrl)
-                    if (imageUrl != null) {
-
-                        // Display the image from the URL
-                        Image(
-                            painter = rememberAsyncImagePainter(imageUrl),
-                            contentDescription = "Profile Picture",
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(CircleShape)
-                                .clickable {
-                                    // Navigate to OthersProfileScreen with userId
-                                    navController.navigate("othersProfile_screen/$userId")
-                                }
-                        )
-                    } else {
-                        // Placeholder or default image
-                        Icon(Icons.Default.AccountCircle,
-                            contentDescription = "Default Profile",
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clickable {
-                                    // Navigate to OthersProfileScreen with userId
-                                    navController.navigate("othersProfile_screen/$userId")
-                                })
-                    }
-
-                    Column(
-                        modifier = Modifier
-                            .weight(1f)
-                            .padding(8.dp)
-                    ) {
-
-
-                        Text(
-                            text = name, fontWeight = FontWeight.Bold,
-                            style = TextStyle(fontSize = 18.sp)
-                        )
-                        Divider()
-                        Text(text = content, style = TextStyle(fontSize = 14.sp))
-                        Text(
-                            text = formatDate(timestamp),
-                            style = TextStyle(fontSize = 12.sp)
-                        )
-                        Spacer(modifier = Modifier.height(4.dp))
-
-                    }
-
-                    val hasCommented by postsViewModel.hasUserCommented(postId)
-                        .collectAsState(
-                            initial = false
-                        )
-                    val commentedIconColor = if (hasCommented) Color.Magenta else Color.Gray
-                    IconButton(onClick = { navController.navigate("comment_screen/$postId") }) {
-                        Icon(
-                            Icons.Filled.Comment,
-                            contentDescription = "Comment",
-                            tint = commentedIconColor
-                        )
-                    }
-                    if (commentsCount > 0) {
-                        Text(text = "$commentsCount")
-                    }
-
-                    val isLiked by postsViewModel.isPostLikedByUser(postId)
-                        .collectAsState(initial = false)
-                    val likeIconColor = if (isLiked) Color.Blue else Color.Gray
-                    IconButton(onClick = { postsViewModel.toggleLike(postId) }) {
-                        Icon(
-                            Icons.Filled.ThumbUp,
-                            contentDescription = "Like",
-                            tint = likeIconColor
-                        )
-                    }
-                    // Conditional likes count text
-                    if (likesCount > 0) {
-                        Text(text = "$likesCount")
-                    }
-                }
-                Divider()
+            if (timestamp != null) {
+                PostItem(
+                    imageUrl = imageUrl,
+                    name = name,
+                    content = content,
+                    timestamp = timestamp,
+                    commentsCount = commentsCount,
+                    likesCount = likesCount,
+                    userId = userId,
+                    postId = postId,
+                    navController = navController,
+                    postsViewModel = postsViewModel
+                )
             }
+            Divider( thickness =  10.dp)
         }
     }
 }
@@ -369,24 +213,32 @@ fun FollowingPostsSection(postsViewModel: PostViewModel, profileViewModel:Profil
                 }
             }
 
-
-            @Composable
-            fun FollowedBandItem(bandName: String, imageUrl: String, bandId: String, navController: NavController ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Image(
-                        painter = rememberAsyncImagePainter(imageUrl),
-                        contentDescription = "$bandName Image",
-                        modifier = Modifier
-                            .size(80.dp)
-                            .clip(CircleShape)
-                            .border(1.5.dp, MaterialTheme.colorScheme.onSurface, CircleShape)
-                            .clickable {
-                                navController.navigate("other_band_screen/$bandId")
-                            },
-                    )
-                    Text(text = bandName, style = MaterialTheme.typography.headlineSmall)
-                }
-            }
+@Composable
+fun FollowedBandItem(bandName: String, imageUrl: String, bandId: String, navController: NavController) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(8.dp)) {
+        Box(
+            modifier = Modifier
+                .size(100.dp) // Set the size for the image
+                .clip(CircleShape) // Clip the Box to be circle shaped
+                .border(2.dp, Color.Gray, CircleShape) // Add a border around the circle
+        ) {
+            Image(
+                painter = rememberAsyncImagePainter(imageUrl),
+                contentDescription = "$bandName Image",
+                modifier = Modifier
+                    .fillMaxSize() // Fill the Box
+            )
+            Text( // Band name below the image
+                text = bandName,
+                style = MaterialTheme.typography.bodyMedium.copy(color = Color.White),
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .background(Color(0xAA000000)) // Semi-transparent background for legibility
+                    .padding(vertical = 2.dp) // Add some padding to the text
+            )
+        }
+    }
+}
 
 @Composable
 fun FollowingBandsSection(postsViewModel: PostViewModel, navController: NavController, bandViewModel: BandViewModel) {
@@ -397,37 +249,82 @@ fun FollowingBandsSection(postsViewModel: PostViewModel, navController: NavContr
     val followedBands by bandViewModel.followedBands.collectAsState()
 
     Column {
-        Text(
-            text = "Bands you are following",
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold
-        )
-        Divider()
-        IconButton(onClick = { navController.navigate("searchband_screen") }) {
-            Icon(
-                imageVector = Icons.Default.Add,
-                contentDescription = "Add"
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = "My Bands",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold
             )
+            IconButton(onClick = { navController.navigate("searchband_screen") }) {
+                Icon(
+                    imageVector = Icons.Default.Add,
+                    contentDescription = "Add",
+                    modifier = Modifier.size(24.dp) // Adjust the size as needed
+                )
+            }
         }
+
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.padding(horizontal = 16.dp)
         ) {
-
-
             items(followedBands) { band ->
+                FollowedBandItem(
+                    bandName = band["bandName"] as? String ?: "Unknown",
+                    imageUrl = band["imageUrl"] as? String ?: "No Content",
+                    bandId = band["bandId"] as? String ?: "No Content",
+                    navController = navController
+                )
                 val bandName = band["bandName"] as? String ?: "Unknown"
                 val imageUrl = band["imageUrl"] as? String ?: "No Content"
                 val bandId = band["bandId"] as? String ?: "No Content"
 
-                FollowedBandItem(
-                    bandName = bandName,
-                    imageUrl = imageUrl,
-                    bandId = bandId,
-                    navController = navController
-                )
+//                Box(
+//                    modifier = Modifier
+//                        .padding(8.dp)
+//                        .size(100.dp) // Set a larger size for your band images
+//                ) {
+//                    if (imageUrl != "No Content") {
+//                        Image(
+//                            painter = rememberAsyncImagePainter(imageUrl),
+//                            contentDescription = "$bandName Image",
+//                            modifier = Modifier
+//                                .fillMaxSize()
+//                                .clip(CircleShape)
+//                                .border(2.dp, Color.Gray, CircleShape) // Add a border 2.dp wide with Gray color, also circle-shaped
+//                                .clickable {
+//                                    navController.navigate("other_band_screen/$bandId")
+//                                },
+//                        )
+//                    } else {
+//                        // Placeholder for no image
+//                        Box(
+//                            modifier = Modifier
+//                                .fillMaxSize()
+//                                .clip(CircleShape)
+//                                .background(Color.LightGray),
+//                            contentAlignment = Alignment.Center
+//                        ) {
+//                            Text(text = bandName.first().toString(), style = MaterialTheme.typography.headlineMedium)
+//                        }
+//                    }
+//                    Text(
+//                        text = bandName,
+//                        modifier = Modifier.align(Alignment.BottomCenter),
+//                        style = MaterialTheme.typography.bodyMedium
+//                    )
+//                }
             }
+
         }
+
+        Divider()
         LazyColumn {
             items(followedBandPosts) { postMap ->
                 val bandName = postMap["bandName"] as? String ?: "No Content"
@@ -444,80 +341,93 @@ fun FollowingBandsSection(postsViewModel: PostViewModel, navController: NavContr
                 val commentsCountFlow = postsViewModel.getCommentsCountFlow(postId)
                 val commentsCount by commentsCountFlow.collectAsState()
 
-
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
+                        .clickable { navController.navigate("postDetails_screen/$postId") }
                         .padding(8.dp)
-                        .clickable {
-                            navController.navigate("postDetails_screen/$postId")
-                        },
-
-                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Spacer(modifier = Modifier.width(35.dp))
-                    Image(
-                        painter = rememberAsyncImagePainter(imageUrl),
-                        contentDescription = "$bandName Image",
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            .border(1.5.dp, MaterialTheme.colorScheme.onSurface, CircleShape)
-                            .clickable {
-                                navController.navigate("other_band_screen/$bandId")
-                            },
-                    )
-                    Spacer(modifier = Modifier.width(20.dp))
+                    // Profile image or placeholder
+                    if (imageUrl != null) {
+                        Image(
+                            painter = rememberAsyncImagePainter(imageUrl),
+                            contentDescription = "$bandName Image",
+                            modifier = Modifier
+                                .size(60.dp)
+                                .clip(CircleShape)
+                                .border(2.dp, MaterialTheme.colorScheme.onSurface, CircleShape)
+                        )
+                    } else {
+                        Icon(
+                            Icons.Default.AccountCircle,
+                            contentDescription = "Default Profile",
+                            modifier = Modifier.size(60.dp)
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.width(16.dp)) // Adjust the space as needed
+
+                    // Column for bandName, content, and timestamp
                     Column(
                         modifier = Modifier
                             .weight(1f)
-                            .padding(8.dp)
+                            .align(Alignment.CenterVertically)
                     ) {
                         Text(
-                            text = bandName, fontWeight = FontWeight.Bold,
-                            style = TextStyle(fontSize = 18.sp)
+                            text = bandName,
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.titleMedium
                         )
-                        Divider()
-                        Text(text = content, style = TextStyle(fontSize = 14.sp))
                         Text(
-                            text = formatDate(timestamp),
-                            style = TextStyle(fontSize = 12.sp)
+                            text = content,
+                            style = MaterialTheme.typography.bodyMedium
                         )
-                        Spacer(modifier = Modifier.height(4.dp))
-
-                    }
-                    val hasCommented by postsViewModel.hasUserCommented(postId)
-                        .collectAsState(
-                            initial = false
+                        Text(
+                            text = formatDate(timestamp), // Ensure this function returns the date as a string
+                            style = MaterialTheme.typography.bodySmall
                         )
-                    val commentedIconColor =
-                        if (hasCommented) Color.Magenta else Color.Gray
-                    IconButton(onClick = { navController.navigate("comment_screen/$postId") }) {
-                        Icon(
-                            Icons.Filled.Comment,
-                            contentDescription = "Comment",
-                            tint = commentedIconColor
-                        )
-                    }
-                    if (commentsCount > 0) {
-                        Text(text = "$commentsCount")
-                    }
-
-                    // Like button with real-time color change based on like status
-                    val likeIconColor = if (isLiked) Color.Blue else Color.Gray
-                    IconButton(onClick = { postsViewModel.toggleLike(postId) }) {
-                        Icon(
-                            Icons.Filled.ThumbUp,
-                            contentDescription = "Like",
-                            tint = likeIconColor
-                        )
-                    }
-
-                    // Display likes count, updating in real-time
-                    if (likesCount > 0) {
-                        Text(text = "$likesCount")
                     }
                 }
+
+// Action buttons and counts for comments and likes, placed below the profile image
+                Column(
+                    modifier = Modifier
+                        .padding(start = 8.dp)
+                ) {
+                    // This space aligns the action buttons under the profile image
+                    //Spacer(modifier = Modifier.height(6.dp)) // Height of the image plus additional padding
+
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        val hasCommented by postsViewModel.hasUserCommented(postId).collectAsState(initial = false)
+                        IconButton(onClick = { navController.navigate("comment_screen/$postId") }) {
+                            Icon(
+                                Icons.Filled.Comment,
+                                contentDescription = "Comment",
+                                tint = if (hasCommented) MaterialTheme.colorScheme.secondary else Color.Gray
+                            )
+                        }
+                        if (commentsCount > 0) {
+                            Text("$commentsCount")
+                        }
+
+                        Spacer(modifier = Modifier.width(24.dp)) // Space between comment and like buttons
+
+                        val isLiked by postsViewModel.isPostLikedByUser(postId).collectAsState(initial = false)
+                        IconButton(onClick = { postsViewModel.toggleLike(postId) }) {
+                            Icon(
+                                Icons.Filled.ThumbUp,
+                                contentDescription = "Like",
+                                tint = if (isLiked) MaterialTheme.colorScheme.secondary else Color.Gray
+                            )
+                        }
+                        if (likesCount > 0) {
+                            Text("$likesCount")
+                        }
+                    }
+                }
+
+
+
                 Divider()
             }
         }
@@ -534,9 +444,84 @@ fun FollowingBandsSection(postsViewModel: PostViewModel, navController: NavContr
     }
 }
 
+@Composable
+fun PostItem(
+    imageUrl: String?,
+    name: String,
+    content: String,
+    timestamp: Any, // Replace with the appropriate type
+    commentsCount: Int,
+    likesCount: Int,
+    userId: String,
+    postId: String,
+    navController: NavController,
+    postsViewModel: PostViewModel
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { navController.navigate("postDetails_screen/$postId") }
+            .padding(8.dp)
+    ) {
+        Row(verticalAlignment = Alignment.Top) {
+            if (imageUrl != null) {
+                Image(
+                    painter = rememberAsyncImagePainter(imageUrl),
+                    contentDescription = "Profile Picture",
+                    modifier = Modifier
+                        .size(50.dp)
+                        .clip(CircleShape)
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.Default.AccountCircle,
+                    contentDescription = "Default Profile",
+                    modifier = Modifier.size(50.dp)
+                )
+            }
+            Spacer(modifier = Modifier.width(12.dp))
 
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = name,
+                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                )
+                Text(
+                    text = content,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Text(
+                    text = formatDate(timestamp), // Make sure to implement this function
+                    style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
+                )
+            }
+        }
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            val hasCommented by postsViewModel.hasUserCommented(postId).collectAsState(initial = false)
+            IconButton(onClick = { navController.navigate("comment_screen/$postId") }) {
+                Icon(
+                    imageVector = Icons.Filled.Comment,
+                    contentDescription = "Comment",
+                    tint = if (hasCommented) MaterialTheme.colorScheme.secondary else Color.Gray
+                )
+            }
+            if (commentsCount > 0) {
+                Text("$commentsCount")
+            }
+            Spacer(modifier = Modifier.width(24.dp))
 
-
-
-
-
+            val isLiked by postsViewModel.isPostLikedByUser(postId).collectAsState(initial = false)
+            IconButton(onClick = { postsViewModel.toggleLike(postId) }) {
+                Icon(
+                    imageVector = Icons.Filled.ThumbUp,
+                    contentDescription = "Like",
+                    tint = if (isLiked) MaterialTheme.colorScheme.secondary else Color.Gray
+                )
+            }
+            if (likesCount > 0) {
+                Text("$likesCount")
+            }
+        }
+    }
+    Divider()
+}

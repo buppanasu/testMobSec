@@ -52,43 +52,25 @@ fun BandScreen(navController: NavController = rememberNavController(),bandId: St
     val memberNames = remember { mutableStateListOf<String>() }
     val bandPosts by postsViewModel.bandPosts.collectAsState(initial = emptyList())
     val bandFeedback by postsViewModel.bandFeedbacks.collectAsState(initial = emptyList())
-
-    // State to store the bandId once we retrieve it from Firestore
     var bandIdState by remember { mutableStateOf<String?>(null) }
-
-
     val followersCount by bandViewModel.followersCount.collectAsState()
     val bandPostsCount by postsViewModel.bandPostsCount.collectAsState()
-
     var currentTab by remember { mutableStateOf("Feed") }
-
-
-
-    // State variables for UI
     val bandProfileImageUrl by bandViewModel.bandProfileImageUrl.collectAsState()
-    val bandImagePainter = rememberAsyncImagePainter(
-        model = ImageRequest.Builder(LocalContext.current)
-            .data(data = bandProfileImageUrl)
-            .error(R.drawable.ic_launcher_foreground) // Your placeholder image
-            .build()
-    )
-
     var isBandCreator = remember {mutableStateOf(false)}
-    // State to manage overlay visibility
     var showJoinRequestsOverlay by remember { mutableStateOf(false) }
-    // State to store join request IDs
     val joinRequestIds = remember { mutableStateListOf<String>() }
-    // Assuming you have these utility functions defined elsewhere
     val firestore = FirebaseFirestore.getInstance()
     fun getUserDocument(userId: String) = firestore.collection("users").document(userId)
     fun getBandDocument(bandId: String) = firestore.collection("bands").document(bandId)
-    // State to store user names who sent join requests
     val joinRequestUserNames = remember { mutableStateListOf<String>() }
+    val bandImagePainter = rememberAsyncImagePainter(
+        model = ImageRequest.Builder(LocalContext.current)
+            .data(data = bandProfileImageUrl)
+            .error(R.drawable.ic_launcher_foreground)
+            .build()
+    )
 
-
-
-
-    // Fetch the user's bandId and band details from Firestore
     LaunchedEffect(user) {
         user?.let { firebaseUser ->
             FirebaseFirestore.getInstance().collection("users").document(firebaseUser.uid)
@@ -124,13 +106,10 @@ fun BandScreen(navController: NavController = rememberNavController(),bandId: St
 
     }
 
-    // Add this LaunchedEffect to fetch the names of the users who have sent join requests
     LaunchedEffect(showJoinRequestsOverlay) {
         Log.d("BandScreen", "Fetching join requests: $showJoinRequestsOverlay")
         if (showJoinRequestsOverlay) {
-            // Clear the previous list to avoid duplicates
             joinRequestUserNames.clear()
-
             firestore.collection("bands").document(bandId)
                 .get().addOnSuccessListener { document ->
                     val joinRequestIdsList =
@@ -208,39 +187,7 @@ fun BandScreen(navController: NavController = rememberNavController(),bandId: St
         Surface(modifier = Modifier.fillMaxSize()) {
             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(paddingValues)) {
 
-                if (isBandCreator.value) {
-                    Button(
-                        onClick = { showJoinRequestsOverlay = true },
-                        modifier = Modifier.padding(16.dp)
-                    ) {
-                        Text("Manage Join Requests")
-                    }
-                }
 
-                // When you want to show the overlay, e.g. in response to a button click
-                if (showJoinRequestsOverlay) {
-                    JoinRequestsOverlay(
-                        joinRequestUserNames = joinRequestUserNames,
-                        joinRequestIds = joinRequestIds,
-                        // ... inside the JoinRequestsOverlay composable when the Accept button is clicked
-                        onAccept = { userId ->
-                            // Make sure to pass the bandName here
-                            val pureUserId = userId.substringAfterLast("/")
-                            bandDetails.value?.let { band ->
-                                acceptJoinRequest(bandId, pureUserId, band.bandName)
-                                // Update any additional UI if necessary
-                                showJoinRequestsOverlay = false
-                            }
-                        },
-                        onReject = { userId ->
-                            val pureUserId = userId.substringAfterLast("/")
-                            rejectJoinRequest(bandId, pureUserId)
-                            // Add any additional UI update logic if necessary after rejecting the request
-                            showJoinRequestsOverlay = false // Close overlay after action
-                        },
-                        onDismiss = { showJoinRequestsOverlay = false }
-                    )
-                }
 
                 // ... Your existing UI code
                 // Top bar with settings icon, not functional in this example
@@ -255,14 +202,16 @@ fun BandScreen(navController: NavController = rememberNavController(),bandId: St
 
                 Spacer(Modifier.height(50.dp))
 
-                // When image is clicked, show dialog to confirm image change
                 Image(
                     painter = bandImagePainter,
                     contentDescription = "Band Image",
                     modifier = Modifier
                         .size(120.dp)
+                        .clip(CircleShape)
                         .clickable { showImageChangeDialog = true }
                 )
+
+
 
                 if (showImageChangeDialog) {
                     // Implement AlertDialog to confirm the action
@@ -295,12 +244,22 @@ fun BandScreen(navController: NavController = rememberNavController(),bandId: St
                 bandDetails.value?.let { band ->
                     Text(
                         text = band.bandName,
-                        style = MaterialTheme.typography.headlineMedium
+                        style = MaterialTheme.typography.headlineLarge.copy(
+                            fontWeight = FontWeight.Bold, // Make it bold
+                            fontSize = 34.sp, // Increase font size for emphasis
+                            letterSpacing = 0.15.sp, // Adjust letter spacing if necessary
+                            color = MaterialTheme.colorScheme.onSurface // Use a color that stands out on your surface color
+                        ),
+                        modifier = Modifier
+                            .padding(horizontal = 16.dp, vertical = 8.dp) // Add some padding
+                            .align(Alignment.CenterHorizontally) // Center align on the horizontal axis
                     )
                 } ?: run {
-                    Text("Loading band details...")
+                    Text(
+                        "Loading band details...",
+                        style = MaterialTheme.typography.bodyLarge
+                    )
                 }
-
                 Spacer(Modifier.height(8.dp))
 
 
@@ -312,10 +271,50 @@ fun BandScreen(navController: NavController = rememberNavController(),bandId: St
                         .padding(16.dp),
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
-                    Text("Posts: $bandPostsCount")
-                    Text("Followers: $followersCount")
-
+                    Text(
+                        "Posts: $bandPostsCount",
+                        style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp) // Set the font size to 16.sp
+                    )
+                    Text(
+                        "Followers: $followersCount",
+                        style = MaterialTheme.typography.bodyLarge.copy(fontSize = 16.sp) // Set the font size to 16.sp
+                    )
                 }
+
+                if (isBandCreator.value) {
+                    Button(
+                        onClick = { showJoinRequestsOverlay = true },
+                        modifier = Modifier.padding(top = 8.dp)
+                    ) {
+                        Text("Manage Join Requests")
+                    }
+                }
+
+                // When you want to show the overlay, e.g. in response to a button click
+                if (showJoinRequestsOverlay) {
+                    JoinRequestsOverlay(
+                        joinRequestUserNames = joinRequestUserNames,
+                        joinRequestIds = joinRequestIds,
+                        // ... inside the JoinRequestsOverlay composable when the Accept button is clicked
+                        onAccept = { userId ->
+                            // Make sure to pass the bandName here
+                            val pureUserId = userId.substringAfterLast("/")
+                            bandDetails.value?.let { band ->
+                                acceptJoinRequest(bandId, pureUserId, band.bandName)
+                                // Update any additional UI if necessary
+                                showJoinRequestsOverlay = false
+                            }
+                        },
+                        onReject = { userId ->
+                            val pureUserId = userId.substringAfterLast("/")
+                            rejectJoinRequest(bandId, pureUserId)
+                            // Add any additional UI update logic if necessary after rejecting the request
+                            showJoinRequestsOverlay = false // Close overlay after action
+                        },
+                        onDismiss = { showJoinRequestsOverlay = false }
+                    )
+                }
+
 
                 // Tabs for Posts, Artists, and Feed
                 val tabTitles = listOf("Posts", "Artists", "Feed")
@@ -353,70 +352,89 @@ fun BandScreen(navController: NavController = rememberNavController(),bandId: St
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(8.dp),
-                                    verticalAlignment = Alignment.CenterVertically
+                                        .padding(16.dp), // More padding for a spacious look
                                 ) {
-                                    Spacer(modifier = Modifier.width(35.dp))
-                                    bandProfileImageUrl?.let { url ->
-                                        Image(
-                                            painter = bandImagePainter,
-                                            contentDescription = "Band Image",
-                                            modifier = Modifier
-                                                .size(40.dp)
-                                                .clip(CircleShape)
-                                        )
-                                    } ?: Text("No profile image available")
-                                    Spacer(modifier = Modifier.width(20.dp))
+                                    Column { // Column for the image and action buttons
+                                        if (bandProfileImageUrl != null) {
+                                            Image(
+                                                painter = rememberAsyncImagePainter(bandProfileImageUrl),
+                                                contentDescription = "Band Image",
+                                                modifier = Modifier
+                                                    .size(50.dp) // Larger for visibility
+                                                    .clip(CircleShape)
+                                                    .border(1.dp, MaterialTheme.colorScheme.onSurface, CircleShape) // Border for definition
+                                            )
+                                        } else {
+                                            Text(
+                                                "No profile image available",
+                                                style = MaterialTheme.typography.labelLarge
+                                            )
+                                        }
+
+                                        // Action buttons row
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            modifier = Modifier.padding(top = 8.dp) // Space between image and action buttons
+                                        ) {
+                                            // Comments count and button
+                                            val hasCommented by postsViewModel.hasUserCommented(postId).collectAsState(initial = false)
+                                            IconButton(onClick = { navController.navigate("comment_screen/$postId") }) {
+                                                Icon(
+                                                    Icons.Filled.Comment,
+                                                    contentDescription = "Comment",
+                                                    tint = if (hasCommented) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant
+                                                )
+                                            }
+                                            if (commentsCount > 0) {
+                                                Text(
+                                                    text = commentsCount.toString(),
+                                                    style = MaterialTheme.typography.labelMedium
+                                                )
+                                            }
+
+                                            Spacer(modifier = Modifier.width(24.dp)) // Spacing between comment and like buttons
+
+                                            // Likes count and button
+                                            val likeIconColor = if (isLiked) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant
+                                            IconButton(onClick = { postsViewModel.toggleLike(postId) }) {
+                                                Icon(
+                                                    Icons.Filled.ThumbUp,
+                                                    contentDescription = "Like",
+                                                    tint = likeIconColor
+                                                )
+                                            }
+                                            if (likesCount > 0) {
+                                                Text(
+                                                    text = likesCount.toString(),
+                                                    style = MaterialTheme.typography.labelMedium
+                                                )
+                                            }
+                                        }
+                                    }
+
+                                    Spacer(modifier = Modifier.width(12.dp))
+
+                                    // Column for text content
                                     Column(
                                         modifier = Modifier
                                             .weight(1f)
-                                            .padding(8.dp)
+                                            .padding(start = 8.dp, end = 4.dp) // Start padding for spacing from the image, end padding for spacing from edge
                                     ) {
                                         Text(
-                                            text = bandName, fontWeight = FontWeight.Bold,
-                                            style = TextStyle(fontSize = 18.sp)
+                                            text = bandName,
+                                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
                                         )
-                                        Divider()
-                                        Text(text = content, style = TextStyle(fontSize = 14.sp))
+                                        Text(
+                                            text = content,
+                                            style = MaterialTheme.typography.bodyMedium
+                                        )
                                         Text(
                                             text = formatDate(timestamp),
-                                            style = TextStyle(fontSize = 12.sp)
+                                            style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
                                         )
-                                        Spacer(modifier = Modifier.height(4.dp))
-
-                                    }
-                                    val hasCommented by postsViewModel.hasUserCommented(postId)
-                                        .collectAsState(
-                                            initial = false
-                                        )
-                                    val commentedIconColor =
-                                        if (hasCommented) Color.Magenta else Color.Gray
-                                    IconButton(onClick = { navController.navigate("comment_screen/$postId") }) {
-                                        Icon(
-                                            Icons.Filled.Comment,
-                                            contentDescription = "Comment",
-                                            tint = commentedIconColor
-                                        )
-                                    }
-                                    if (commentsCount > 0) {
-                                        Text(text = "$commentsCount")
-                                    }
-
-                                    // Like button with real-time color change based on like status
-                                    val likeIconColor = if (isLiked) Color.Blue else Color.Gray
-                                    IconButton(onClick = { postsViewModel.toggleLike(postId) }) {
-                                        Icon(
-                                            Icons.Filled.ThumbUp,
-                                            contentDescription = "Like",
-                                            tint = likeIconColor
-                                        )
-                                    }
-
-                                    // Display likes count, updating in real-time
-                                    if (likesCount > 0) {
-                                        Text(text = "$likesCount")
                                     }
                                 }
+
                                 Divider()
                             }
                         }
@@ -467,38 +485,43 @@ fun BandScreen(navController: NavController = rememberNavController(),bandId: St
                                 Row(
                                     modifier = Modifier
                                         .fillMaxWidth()
-                                        .padding(8.dp),
-                                    verticalAlignment = Alignment.CenterVertically
+                                        .padding(8.dp)
                                 ) {
-                                    Spacer(modifier = Modifier.width(35.dp))
-                                    Image(
-                                        painter = rememberAsyncImagePainter(imageUrl),
-                                        contentDescription = "",
+                                    // Column for the image and action icons
+                                    Column(
+                                        horizontalAlignment = Alignment.CenterHorizontally,
                                         modifier = Modifier
-                                            .size(40.dp)
-                                            .clip(CircleShape)
-                                            .border(1.5.dp, MaterialTheme.colorScheme.primary, CircleShape)
-                                    ) ?: Text("No profile image available")
-                                    Spacer(modifier = Modifier.width(20.dp))
+                                            .padding(end = 16.dp) // Adjust the end padding to bring texts closer to the image
+                                    ) {
+                                        Image(
+                                            painter = rememberAsyncImagePainter(imageUrl),
+                                            contentDescription = "Profile Picture",
+                                            modifier = Modifier
+                                                .size(60.dp) // Adjust the size if necessary
+                                                .clip(CircleShape)
+                                                .border(1.5.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                                        )
+
+                                        // Add action icons below the image here if necessary
+                                    }
+
+                                    // Column for texts
                                     Column(
                                         modifier = Modifier
                                             .weight(1f)
-                                            .padding(8.dp)
                                     ) {
                                         Text(
-                                            text = userName, fontWeight = FontWeight.Bold,
+                                            text = userName,
+                                            fontWeight = FontWeight.Bold,
                                             style = TextStyle(fontSize = 18.sp)
                                         )
-                                        Divider()
                                         Text(text = content, style = TextStyle(fontSize = 14.sp))
                                         Text(
                                             text = formatDate(timestamp),
                                             style = TextStyle(fontSize = 12.sp)
                                         )
-                                        Spacer(modifier = Modifier.height(4.dp))
-
                                     }
-
+                                    // Add the action icons next to the texts here if necessary
                                 }
                                 Divider()
                             }
@@ -511,7 +534,6 @@ fun BandScreen(navController: NavController = rememberNavController(),bandId: St
         }
     }
 }
-
 @Composable
 fun JoinRequestsOverlay(
     joinRequestUserNames: List<String>,
@@ -520,40 +542,70 @@ fun JoinRequestsOverlay(
     onReject: (String) -> Unit,
     onDismiss: () -> Unit
 ) {
-    // This creates a semi-transparent overlay that fills the entire screen
-    Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.5f))) {
-        Column(
-            modifier = Modifier.align(Alignment.Center).padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            // Header
-            Text("Join Requests", style = MaterialTheme.typography.headlineSmall)
+    // Define the TextStyle for the names here
+    val nameTextStyle = MaterialTheme.typography.bodySmall.copy(
+        fontWeight = FontWeight.Bold,
+    )
 
-            if (joinRequestUserNames.isEmpty()) {
-                Text("No join requests")
-            } else {
-                // List of requests
-                joinRequestUserNames.zip(joinRequestIds).forEach { (name, userId) ->
-                    Row(horizontalArrangement = Arrangement.SpaceBetween) {
-                        Text(name)
-                        Row {
-                            Button(onClick = { onAccept(userId) }) {
-                                Text("Accept")
-                            }
-                            Spacer(Modifier.width(8.dp))
-                            Button(onClick = { onReject(userId) }) {
-                                Text("Reject")
+    if (joinRequestUserNames.isNotEmpty()) {
+        AlertDialog(
+            onDismissRequest = onDismiss,
+            title = {
+                Text("Join Requests", style = MaterialTheme.typography.headlineSmall)
+            },
+            text = {
+                LazyColumn {
+                    items(joinRequestUserNames.zip(joinRequestIds)) { (name, userId) ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically // Align text to center vertically
+                        ) {
+                            Text(name, style = nameTextStyle)
+                            Row {
+                                Button(
+                                    onClick = { onAccept(userId) },
+                                    // Style your buttons here
+                                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                                ) {
+                                    Text("Accept")
+                                }
+                                Spacer(Modifier.width(8.dp))
+                                OutlinedButton(
+                                    onClick = { onReject(userId) },
+                                    // Style your buttons here
+                                ) {
+                                    Text("Reject")
+                                }
                             }
                         }
+                        Divider()
                     }
                 }
+            },
+            confirmButton = {
+                TextButton(onClick = onDismiss) {
+                    Text("Close")
+                }
             }
-
-            // Dismiss button
-            Button(onClick = onDismiss) {
-                Text("Close")
+        )
+    } else {
+        AlertDialog(
+            onDismissRequest = onDismiss,
+            title = {
+                Text("Join Requests", style = MaterialTheme.typography.headlineSmall)
+            },
+            text = {
+                Text("No join requests", style = nameTextStyle)
+            },
+            confirmButton = {
+                TextButton(onClick = onDismiss) {
+                    Text("Close")
+                }
             }
-        }
+        )
     }
 }
 

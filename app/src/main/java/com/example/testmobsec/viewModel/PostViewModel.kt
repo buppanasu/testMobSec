@@ -74,8 +74,10 @@ class PostViewModel: ViewModel() {
 
                 // Initialize an empty list to hold the posts with user names
                 val postsWithUserNames = mutableListOf<Map<String, Any>>()
+                // Filter posts that do not have a "bandId" field and are not associated with the currentUserRef
                 val filteredPosts = result.documents.filter { document ->
-                    document["userId"] != currentUserRef
+                    val hasNoBandId = document["bandId"] == null
+                    document["userId"] != currentUserRef && hasNoBandId
                 }
                 // Iterate through each document in the result
                 for (document in filteredPosts) {
@@ -825,7 +827,6 @@ class PostViewModel: ViewModel() {
 
 
 }
-
 
 
 

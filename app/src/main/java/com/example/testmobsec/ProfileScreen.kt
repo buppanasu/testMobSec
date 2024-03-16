@@ -5,6 +5,7 @@ import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -57,6 +58,7 @@ import com.example.testmobsec.viewModel.ProfileViewModel
 import java.util.Locale
 import coil.compose.rememberAsyncImagePainter
 import com.google.firebase.firestore.DocumentReference
+
 
 
 @Composable
@@ -149,56 +151,86 @@ fun TabRowSection(selectedTab: Int, onTabSelected: (Int) -> Unit,
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.Top
                     ) {
-                        Spacer(modifier = Modifier.width(35.dp))
-                        profileImageUrl?.let { url ->
-                            Image(
-                                painter = rememberAsyncImagePainter(url),
-                                contentDescription = "",
-                                modifier = Modifier
-                                    .size(40.dp)
-                                    .clip(CircleShape)
-                                    .border(1.5.dp, MaterialTheme.colorScheme.primary, CircleShape)
-                            )
-                        }  ?: Text("No profile image available")
-                        Spacer(modifier = Modifier.width(20.dp))
                         Column(
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(8.dp)
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.padding(end = 16.dp) // Adjust the end padding to control space between image and text column
                         ) {
-                            Text(text = name, fontWeight = FontWeight.Bold,
-                                style = TextStyle(fontSize = 18.sp)
+                            // Profile image
+                            if (profileImageUrl != null) {
+                                Image(
+                                    painter = rememberAsyncImagePainter(profileImageUrl),
+                                    contentDescription = "Profile Picture",
+                                    modifier = Modifier
+                                        .size(60.dp) // Adjust size to match the text height
+                                        .clip(CircleShape)
+                                        .border(1.5.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                                )
+                            } else {
+                                Text("No profile image available", style = MaterialTheme.typography.bodyMedium)
+                            }
+
+                        }
+
+                        // Texts column
+                        Column(
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text(
+                                text = name,
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.headlineMedium
                             )
-                            Divider()
-                            Text(text = content, style = TextStyle(fontSize = 14.sp))
-                            Text(text = formatDate(timestamp), style = TextStyle(fontSize = 12.sp))
-                            Spacer(modifier = Modifier.height(4.dp))
-
-                        }
-                        val hasCommented by postsViewModel.hasUserCommented(postId).collectAsState(
-                            initial = false
-                        )
-                        val commentedIconColor = if(hasCommented) Color.Magenta else Color.Gray
-                        IconButton(onClick = { navController.navigate("comment_screen/$postId") }) {
-                            Icon(Icons.Filled.Comment, contentDescription = "Comment", tint = commentedIconColor)
-                        }
-                        if (commentsCount > 0) {
-                            Text(text = "$commentsCount")
-                        }
-
-                        // Like button with real-time color change based on like status
-                        val likeIconColor = if (isLiked) Color.Blue else Color.Gray
-                        IconButton(onClick = { postsViewModel.toggleLike(postId) }) {
-                            Icon(Icons.Filled.ThumbUp, contentDescription = "Like", tint = likeIconColor)
-                        }
-
-                        // Display likes count, updating in real-time
-                        if (likesCount > 0) {
-                            Text(text = "$likesCount")
+                            Text(text = content, style = MaterialTheme.typography.bodyMedium)
+                            Text(
+                                text = formatDate(timestamp),
+                                style = MaterialTheme.typography.labelMedium
+                            )
                         }
                     }
+                    // Action icons and counts
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        val hasCommented by postsViewModel.hasUserCommented(postId).collectAsState(initial = false)
+                        val isLiked by postsViewModel.isPostLikedByUser(postId).collectAsState(initial = false)
+
+                        // Comment icon with count
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(onClick = { navController.navigate("comment_screen/$postId") }) {
+                                Icon(
+                                    Icons.Filled.Comment,
+                                    contentDescription = "Comment",
+                                    tint = if (hasCommented) MaterialTheme.colorScheme.primary else Color.Gray
+                                )
+                            }
+                            if (commentsCount > 0) {
+                                Text(
+                                    text = "$commentsCount",
+                                    modifier = Modifier.align(Alignment.CenterVertically)
+                                )
+                            }
+                        }
+
+                        Spacer(modifier = Modifier.width(10.dp))
+
+                        // Like icon with count
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(onClick = { postsViewModel.toggleLike(postId) }) {
+                                Icon(
+                                    Icons.Filled.ThumbUp,
+                                    contentDescription = "Like",
+                                    tint = if (isLiked) MaterialTheme.colorScheme.primary else Color.Gray
+                                )
+                            }
+                            if (likesCount > 0) {
+                                Text(
+                                    text = "$likesCount",
+                                    modifier = Modifier.align(Alignment.CenterVertically)
+                                )
+                            }
+                        }
+                    }
+
                     Divider()
                 }
             }
@@ -229,57 +261,72 @@ fun TabRowSection(selectedTab: Int, onTabSelected: (Int) -> Unit,
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.Top // Align to top for better control with varied text lengths
                     ) {
-                        Spacer(modifier = Modifier.width(35.dp))
-                        Image(
-                            painter = rememberAsyncImagePainter(imageUrl),
-                            contentDescription = "",
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(CircleShape)
-                                .border(1.5.dp, MaterialTheme.colorScheme.primary, CircleShape)
-                        ) ?: Text("No profile image available")
-                        Spacer(modifier = Modifier.width(20.dp))
+                        // Profile image
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Image(
+                                painter = rememberAsyncImagePainter(imageUrl),
+                                contentDescription = "Profile Picture",
+                                modifier = Modifier
+                                    .size(60.dp)
+                                    .clip(CircleShape)
+                                    .border(1.5.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                            ) ?: Text("No profile image available", style = MaterialTheme.typography.bodyMedium)
+
+
+                        }
+
+                        Spacer(modifier = Modifier.width(16.dp))
+
+                        // Column for text content
                         Column(
                             modifier = Modifier
                                 .weight(1f)
-                                .padding(8.dp)
+                                .padding(start = 8.dp)
                         ) {
-                            Text(text = name, fontWeight = FontWeight.Bold,
-                                style = TextStyle(fontSize = 18.sp)
+                            Text(
+                                text = name,
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.titleMedium
                             )
-                            Divider()
-                            Text(text = content, style = TextStyle(fontSize = 14.sp))
-                            Text(text = formatDate(timestamp), style = TextStyle(fontSize = 12.sp))
-                            Spacer(modifier = Modifier.height(4.dp))
-
+                            Text(
+                                text = content,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Text(
+                                text = formatDate(timestamp),
+                                style = MaterialTheme.typography.bodySmall
+                            )
                         }
-                        val hasCommented by postsViewModel.hasUserCommented(postId).collectAsState(
-                            initial = false
-                        )
-                        val commentedIconColor = if(hasCommented) Color.Magenta else Color.Gray
+                    }
+// Action icons directly below the profile image
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        val hasCommented by postsViewModel.hasUserCommented(postId).collectAsState(initial = false)
                         IconButton(onClick = { navController.navigate("comment_screen/$postId") }) {
-                            Icon(Icons.Filled.Comment, contentDescription = "Comment", tint = commentedIconColor)
+                            Icon(Icons.Filled.Comment, contentDescription = "Comment", tint = if(hasCommented) Color.Magenta else Color.Gray)
                         }
                         if (commentsCount > 0) {
                             Text(text = "$commentsCount")
                         }
 
-                        // Like button with real-time color change based on like status
+                        Spacer(modifier = Modifier.width(16.dp))
+
                         val likeIconColor = if (isLiked) Color.Blue else Color.Gray
                         IconButton(onClick = { postsViewModel.toggleLike(postId) }) {
                             Icon(Icons.Filled.ThumbUp, contentDescription = "Like", tint = likeIconColor)
                         }
-
-                        // Display likes count, updating in real-time
                         if (likesCount > 0) {
                             Text(text = "$likesCount")
                         }
                     }
                     Divider()
+
                 }
             }
+
         }
 
         2->{
@@ -302,63 +349,83 @@ fun TabRowSection(selectedTab: Int, onTabSelected: (Int) -> Unit,
                     val userId = userDocRef?.id.toString()
                     val commentsCountFlow = postsViewModel.getCommentsCountFlow(postId)
                     val commentsCount by commentsCountFlow.collectAsState()
+                    val hasCommented by postsViewModel.hasUserCommented(postId).collectAsState(initial = false)
+                    val likeIconColor = if (isLiked) Color.Blue else Color.Gray
                     LaunchedEffect(userId) {
                         profileViewModel.fetchProfileImageUrlByUserId(userId)
                     }
                     val imageUrl = profileImageUrls[userId]
+                    // This is the main Row that holds the image, texts, and icons
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                        verticalAlignment = Alignment.Top
                     ) {
-                        Spacer(modifier = Modifier.width(35.dp))
-                        Image(
-                            painter = rememberAsyncImagePainter(imageUrl),
-                            contentDescription = "",
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(CircleShape)
-                                .border(1.5.dp, MaterialTheme.colorScheme.primary, CircleShape)
-                        ) ?: Text("No profile image available")
-                        Spacer(modifier = Modifier.width(20.dp))
+                        // Column for profile image and action icons
                         Column(
-                            modifier = Modifier
-                                .weight(1.5f)
-                                .padding(8.dp)
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.padding(end = 16.dp)
                         ) {
-                            Text(text = name, fontWeight = FontWeight.Bold,
-                                style = TextStyle(fontSize = 18.sp)
+                            // Profile image
+                            if (imageUrl != null) {
+                                Image(
+                                    painter = rememberAsyncImagePainter(imageUrl),
+                                    contentDescription = "Profile Picture",
+                                    modifier = Modifier
+                                        .size(60.dp) // Size adjusted for visibility
+                                        .clip(CircleShape)
+                                        .border(1.5.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                                )
+                            } else {
+                                Text("No profile image available", style = MaterialTheme.typography.bodyMedium)
+                            }
+
+
+                        }
+
+                        Spacer(modifier = Modifier.width(16.dp))
+
+                        // Column for text content next to the profile image
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = name,
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.titleMedium
                             )
-                            Divider()
-                            Text(text = content, style = TextStyle(fontSize = 14.sp))
-                            Text(text = formatDate(timestamp), style = TextStyle(fontSize = 12.sp))
-                            Spacer(modifier = Modifier.height(4.dp))
-
+                            Text(
+                                text = content,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                            Text(
+                                text = formatDate(timestamp),
+                                style = MaterialTheme.typography.bodySmall
+                            )
                         }
+                        // Action icons below the profile image
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            // Comments icon with count
+                            IconButton(onClick = { navController.navigate("comment_screen/$postId")  }) {
+                                Icon(Icons.Filled.Comment, contentDescription = "Comment", tint = if(hasCommented) Color.Magenta else Color.Gray)
+                            }
+                            if (commentsCount > 0) {
+                                Text(text = "$commentsCount")
+                            }
 
-                        val hasCommented by postsViewModel.hasUserCommented(postId).collectAsState(
-                            initial = false
-                        )
-                        val commentedIconColor = if(hasCommented) Color.Magenta else Color.Gray
-                        IconButton(onClick = { navController.navigate("comment_screen/$postId") }) {
-                            Icon(Icons.Filled.Comment, contentDescription = "Comment", tint = commentedIconColor)
-                        }
-                        if (commentsCount > 0) {
-                            Text(text = "$commentsCount")
-                        }
+                            Spacer(modifier = Modifier.width(16.dp))
 
-                        // Like button with real-time color change based on like status
-                        val likeIconColor = if (isLiked) Color.Blue else Color.Gray
-                        IconButton(onClick = { postsViewModel.toggleLike(postId) }) {
-                            Icon(Icons.Filled.ThumbUp, contentDescription = "Like", tint = likeIconColor)
-                        }
-
-                        // Display likes count, updating in real-time
-                        if (likesCount > 0) {
-                            Text(text = "$likesCount")
+                            // Likes icon with count
+                            IconButton(onClick = {postsViewModel.toggleLike(postId) }) {
+                                Icon(Icons.Filled.ThumbUp, contentDescription = "Like", tint = likeIconColor)
+                            }
+                            if (likesCount > 0) {
+                                Text(text = "$likesCount")
+                            }
                         }
                     }
+                    // Divider to separate posts
+
+
                     Divider()
                 }
             }
