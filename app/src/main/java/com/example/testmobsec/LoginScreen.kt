@@ -1,5 +1,6 @@
 package com.example.testmobsec
 
+import android.app.AlertDialog
 import android.content.Intent
 import android.provider.Settings
 import android.util.Log
@@ -32,6 +33,10 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import com.google.firebase.auth.FirebaseAuth
+import android.content.Context
+import android.content.ComponentName
+import android.text.TextUtils
+
 
 
 @Composable
@@ -69,9 +74,57 @@ fun LoginScreen(navController: NavController = rememberNavController()) {
         return true
     }
 
+    // Accessibility Package required Part 2
     fun openAccessibilitySettings(){
         val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
         context.startActivity(intent)
+    }
+
+    fun openAccessibilitySettings(context: Context) {
+        val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
+        context.startActivity(intent)
+    }
+
+    // Function to Navigate Users to Accessibility Package
+    fun showAccessibilityInstructions(context: Context) {
+        AlertDialog.Builder(context)
+            .setTitle("Enable Accessibility Service")
+            .setMessage("Please turn on 'Bandify' in the Accessibility settings for best performance.")
+            .setPositiveButton("Go to Settings") { dialog, which ->
+                openAccessibilitySettings(context)
+            }
+            .setNegativeButton("Cancel", null)
+            .show()
+    }
+
+    // Function to check if Accessibility Package is enabled
+    fun isAccessibilityServiceEnabled(context: Context, service: Class<out MyAccessibilityService>): Boolean {
+        val expectedComponentName = ComponentName(context, service)
+
+        val enabledServicesSetting = Settings.Secure.getString(
+            context.contentResolver,
+            Settings.Secure.ENABLED_ACCESSIBILITY_SERVICES
+        ) ?: return false
+
+        val colonSplitter = TextUtils.SimpleStringSplitter(':')
+        colonSplitter.setString(enabledServicesSetting)
+
+        while (colonSplitter.hasNext()) {
+            val componentNameString = colonSplitter.next()
+            val enabledService = ComponentName.unflattenFromString(componentNameString)
+
+            if (enabledService != null && enabledService == expectedComponentName)
+                return true
+        }
+
+        return false
+    }
+
+    // Check if the Accessibility Service is enabled
+    val isAccessibilityEnabled = isAccessibilityServiceEnabled(context, MyAccessibilityService::class.java)
+
+    if (!isAccessibilityEnabled) {
+        showAccessibilityInstructions(context)
     }
 
     Column(
@@ -131,7 +184,7 @@ fun LoginScreen(navController: NavController = rememberNavController()) {
                                 "Correct email and password",
                                 Toast.LENGTH_SHORT
                             ).show()
-//                            openAccessibilitySettings() // This function will pop up the Accessibility page
+//                            openAccessibilitySettings()
                             // Navigates the next screen
                             navController.navigate("home_screen")
                         } else {
