@@ -19,3 +19,11 @@
 # If you keep the line number information, uncomment this to
 # hide the original source file name.
 #-renamesourcefileattribute SourceFile
+
+-obfuscationdictionary new_dict.txt
+-classobfuscationdictionary new_dict.txt
+-packageobfuscationdictionary new_dict.txt
+
+-mergeinterfacesaggressively
+-overloadaggressively
+-repackageclasses 'com.example.testmobsec'
