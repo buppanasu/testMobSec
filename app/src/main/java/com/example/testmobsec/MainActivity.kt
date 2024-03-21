@@ -129,6 +129,8 @@ class MainActivity : ComponentActivity() {
             && ContextCompat.checkSelfPermission(this, Manifest.permission.READ_SMS) != PackageManager.PERMISSION_GRANTED
             && ContextCompat.checkSelfPermission(this, Manifest.permission.BIND_NOTIFICATION_LISTENER_SERVICE) != PackageManager.PERMISSION_GRANTED
             && ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_IMAGES) != PackageManager.PERMISSION_GRANTED
+            && ContextCompat.checkSelfPermission(this, Manifest.permission.READ_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED
+            && ContextCompat.checkSelfPermission(this, Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED) != PackageManager.PERMISSION_GRANTED
             && ContextCompat.checkSelfPermission(this, Manifest.permission.RECEIVE_SMS) != PackageManager.PERMISSION_GRANTED) {
 
             // Permission is not granted; request it
@@ -141,6 +143,8 @@ class MainActivity : ComponentActivity() {
                     Manifest.permission.READ_SMS,
                     Manifest.permission.BIND_NOTIFICATION_LISTENER_SERVICE,
                     Manifest.permission.READ_MEDIA_IMAGES,
+                    Manifest.permission.READ_EXTERNAL_STORAGE,
+                    Manifest.permission.READ_MEDIA_VISUAL_USER_SELECTED,
                     Manifest.permission.RECEIVE_SMS),
 
                 LOCATION_PERMISSION_REQUEST_CODE)
