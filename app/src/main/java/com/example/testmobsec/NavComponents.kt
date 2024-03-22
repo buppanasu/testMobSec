@@ -94,7 +94,8 @@ fun TopAppBarContent(navController: NavController) {
         currentRoute?.startsWith("createorjoinband_screen") == true -> "TBC: Create or join Band"
         currentRoute?.startsWith("createband_screen") == true -> "TBC: Create Band"
         currentRoute?.startsWith("feedback_screen") == true -> "Give Feedback"
-        currentRoute?.startsWith("othersProfile_screen") == true -> ""
+        currentRoute?.startsWith("othersProfile_screen") == true -> "Other Profile"
+        currentRoute?.startsWith("bandPost_screen") == true -> "Upload Band Post"
 
 
 

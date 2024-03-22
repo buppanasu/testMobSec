@@ -115,7 +115,7 @@ fun ChatListScreen(navController: NavController, bandViewModel: BandViewModel = 
                     Tab(
                         selected = selectedTabIndex == 0,
                         onClick = { selectedTabIndex = 0 },
-                        text = { Text("Followed Bands") }
+                        text = { Text("Explore All Bands") }
                     )
                     Tab(
                         selected = selectedTabIndex == 1,

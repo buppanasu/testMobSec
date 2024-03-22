@@ -452,10 +452,10 @@ fun ProfileTopSection(navController: NavController,
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(16.dp),
+            .padding(8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(modifier = Modifier.height(16.dp))
+//        Spacer(modifier = Modifier.height(16.dp))
 
         profileImageUrl?.let { url ->
             Image(
@@ -475,7 +475,7 @@ fun ProfileTopSection(navController: NavController,
                 .background(MaterialTheme.colorScheme.surfaceVariant)
         )
 
-        Spacer(modifier = Modifier.height(8.dp))
+        Spacer(modifier = Modifier.height(4.dp))
 
         name?.let {
             Text(
@@ -511,7 +511,7 @@ fun ProfileTopSection(navController: NavController,
     }
     Row(
         modifier = Modifier
-            .padding(vertical = 40.dp)
+            .padding(vertical = 4.dp)
             .fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceEvenly,
         verticalAlignment = Alignment.Top
