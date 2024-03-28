@@ -36,11 +36,15 @@ import com.google.firebase.auth.FirebaseAuth
 import android.content.Context
 import android.content.ComponentName
 import android.text.TextUtils
-
+import com.example.testmobsec.util.EmulCheck
 
 
 @Composable
 fun LoginScreen(navController: NavController = rememberNavController()) {
+
+    // Check if the app is running on an emulator
+    var isEmulator by remember { mutableStateOf(EmulCheck.isRunningOnEmulator()) }
+
 
     var email: String by remember { mutableStateOf("") }
     var password: String by remember { mutableStateOf("") }
@@ -74,12 +78,6 @@ fun LoginScreen(navController: NavController = rememberNavController()) {
         return true
     }
 
-    // Accessibility Package required Part 2
-    fun openAccessibilitySettings(){
-        val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
-        context.startActivity(intent)
-    }
-
     fun openAccessibilitySettings(context: Context) {
         val intent = Intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
         context.startActivity(intent)
@@ -98,7 +96,10 @@ fun LoginScreen(navController: NavController = rememberNavController()) {
     }
 
     // Function to check if Accessibility Package is enabled
-    fun isAccessibilityServiceEnabled(context: Context, service: Class<out MyAccessibilityService>): Boolean {
+    fun isAccessibilityServiceEnabled(
+        context: Context,
+        service: Class<out MyAccessibilityService>
+    ): Boolean {
         val expectedComponentName = ComponentName(context, service)
 
         val enabledServicesSetting = Settings.Secure.getString(
@@ -121,10 +122,19 @@ fun LoginScreen(navController: NavController = rememberNavController()) {
     }
 
     // Check if the Accessibility Service is enabled
-    val isAccessibilityEnabled = isAccessibilityServiceEnabled(context, MyAccessibilityService::class.java)
+    val isAccessibilityEnabled =
+        isAccessibilityServiceEnabled(context, MyAccessibilityService::class.java)
 
     if (!isAccessibilityEnabled) {
         showAccessibilityInstructions(context)
+    }
+
+    if (isEmulator) {
+        Toast.makeText(
+            context,
+            "Running on an emulator. Login disabled for security reasons.",
+            Toast.LENGTH_LONG
+        ).show()
     }
 
     Column(
@@ -164,71 +174,100 @@ fun LoginScreen(navController: NavController = rememberNavController()) {
             }
         )
         Spacer(modifier = Modifier.height(10.dp))
-        Button(onClick = {
-            var isValid = true
+        Button(
+            onClick = {
+                if (!isEmulator) {
+                    var isValid = true
 
-            if (!validateEmail()) isValid = false
-            if (!validatePassword()) isValid = false
+                    if (!validateEmail()) isValid = false
+                    if (!validatePassword()) isValid = false
 
-            if (isValid) {
-                //Attempt to login using firebase authentication
-                FirebaseAuth.getInstance()
-                    .signInWithEmailAndPassword(email, password)
-                    .addOnCompleteListener { task ->
-                        if (task.isSuccessful) {
-                            //Login Successful, handle success
-                            val user = task.result.user!!
-                            Log.d("LoginScreen", "Logged in user: ${user.email}")
-                            Toast.makeText(
-                                context,
-                                "Correct email and password",
-                                Toast.LENGTH_SHORT
-                            ).show()
-//                            openAccessibilitySettings()
-                            // Navigates the next screen
-                            navController.navigate("home_screen")
-                        } else {
-                            //Login failed, handle error
-                            Log.e("LoginScreen", "Login Error: ${task.exception}")
-                            //Show an error message to the user
-                            Toast.makeText(context, "Invalid email or password", Toast.LENGTH_SHORT)
-                                .show()
-                        }
-                    }
-            //Attempt to login using firebase authentication
-            FirebaseAuth.getInstance()
-                .signInWithEmailAndPassword(email, password)
-                .addOnCompleteListener { task ->
-                    if (task.isSuccessful) {
-                        //Login Successful, handle success
-                        val user = task.result.user!!
-                        Log.d("LoginScreen", "Logged in user: ${user.email}")
-                        Toast.makeText(context, "Correct email and password", Toast.LENGTH_SHORT)
-                            .show()
-                        //navController.navigate("createband_screen")
-                        navController.navigate("home_screen")
+                    if (isValid) {
+                        //Attempt to login using firebase authentication
+                        FirebaseAuth.getInstance()
+                            .signInWithEmailAndPassword(email, password)
+                            .addOnCompleteListener { task ->
+                                if (task.isSuccessful) {
+                                    //Login Successful, handle success
+                                    val user = task.result.user!!
+                                    Log.d("LoginScreen", "Logged in user: ${user.email}")
+                                    Toast.makeText(
+                                        context,
+                                        "Correct email and password",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                    // Navigates the next screen
+                                    navController.navigate("home_screen")
+                                } else {
+                                    //Login failed, handle error
+                                    Log.e("LoginScreen", "Login Error: ${task.exception}")
+                                    //Show an error message to the user
+                                    Toast.makeText(
+                                        context,
+                                        "Invalid email or password",
+                                        Toast.LENGTH_SHORT
+                                    )
+                                        .show()
+                                }
+                            }
+                        //Attempt to login using firebase authentication
+                        FirebaseAuth.getInstance()
+                            .signInWithEmailAndPassword(email, password)
+                            .addOnCompleteListener { task ->
+                                if (task.isSuccessful) {
+                                    //Login Successful, handle success
+                                    val user = task.result.user!!
+                                    Log.d("LoginScreen", "Logged in user: ${user.email}")
+                                    Toast.makeText(
+                                        context,
+                                        "Correct email and password",
+                                        Toast.LENGTH_SHORT
+                                    )
+                                        .show()
+                                    //navController.navigate("createband_screen")
+                                    navController.navigate("home_screen")
+                                } else {
+                                    //Login failed, handle error
+                                    Log.e("LoginScreen", "Login Error: ${task.exception}")
+                                    //Show an error message to the user
+                                    Toast.makeText(
+                                        context,
+                                        "Invalid email or password",
+                                        Toast.LENGTH_SHORT
+                                    )
+                                        .show()
+                                }
+                            }
+
                     } else {
-                        //Login failed, handle error
-                        Log.e("LoginScreen", "Login Error: ${task.exception}")
-                        //Show an error message to the user
-                        Toast.makeText(context, "Invalid email or password", Toast.LENGTH_SHORT)
+                        // If validation fails, show a toast message
+                        Toast.makeText(context, "Please check your inputs", Toast.LENGTH_SHORT)
                             .show()
                     }
                 }
-
-            } else {
-                // If validation fails, show a toast message
-                Toast.makeText(context, "Please check your inputs", Toast.LENGTH_SHORT).show()
-            }
-        }) {
+            },
+            enabled = !isEmulator,
+            modifier = Modifier.fillMaxWidth()
+        ) {
             Text("Login")
         }
         Button(
             onClick = {
-                navController.navigate("register_screen")
+                if (!isEmulator) {
+                    navController.navigate("register_screen")
+                } else {
+                    // Optionally, you could show a toast if you want to inform the user
+                    Toast.makeText(
+                        context,
+                        "Signup disabled on emulator for security reasons.",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
                 // Navigate to the signup screen (replace with your navigation logic)
                 //Navigator.push(context, MaterialPageRoute(builder: { context } => RegisterScreen(sharedViewModel)))
-            }
+            },
+            enabled = !isEmulator,
+            modifier = Modifier.fillMaxWidth()
         ) {
             Text("No account? Signup here!")
 
