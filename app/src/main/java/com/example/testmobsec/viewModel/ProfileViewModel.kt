@@ -34,44 +34,52 @@ class ProfileViewModel() : ViewModel() {
     private var auth: FirebaseAuth = FirebaseAuth.getInstance()
     private var firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
     private var storage = FirebaseStorage.getInstance()
+
+    // StateFlow for list of profileImageUrls
     private val _profileImageUrls = MutableStateFlow<Map<String, String?>>(emptyMap())
     val profileImageUrls: StateFlow<Map<String, String?>> = _profileImageUrls
     val userId = auth.currentUser?.uid
+
+    // StateFlow for followed users
     private val _followedUsers = MutableStateFlow<List<Map<String, Any>>>(emptyList())
     val followedUsers: StateFlow<List<Map<String, Any>>> = _followedUsers
     var currentUser by mutableStateOf(auth.currentUser)
         private set
 
+    // StateFlow for profileImageUrl
     private val _profileImageUrl = MutableStateFlow<String?>(null)
     val profileImageUrl = _profileImageUrl.asStateFlow()
 
-    // StateFlows for first name and last name
+    // StateFlow for name
     private val _name = MutableStateFlow<String?>(null)
     val name = _name.asStateFlow()
 
+    // StateFlow to hold current user role
     private val _currentUserRole = MutableStateFlow<String?>(null)
     val currentUserRole = _currentUserRole.asStateFlow()
 
+    // StateFlow to hold username
     private val _userName = MutableStateFlow<String?>(null)
     val userName: StateFlow<String?> = _userName
 
+    // StateFlows to hold follower and following booleans
     private val _following = MutableStateFlow<List<DocumentReference>>(emptyList())
     val following: StateFlow<List<DocumentReference>> = _following
-
     private val _isFollowing = MutableStateFlow<Boolean?>(null)
     val isFollowing: StateFlow<Boolean?> = _isFollowing
 
-    // StateFlows to hold counts
+    // StateFlows to hold counts for following and followers
     private val _followersCount = MutableStateFlow<Int>(0)
     val followersCount: StateFlow<Int> = _followersCount
-
     private val _followingCount = MutableStateFlow<Int>(0)
     val followingCount: StateFlow<Int> = _followingCount
 
 
-
+    // StateFlow to hold email
     private val _email = MutableStateFlow<String?>(null)
     val email = _email.asStateFlow()
+
+    // StateFlow to hold list of chat starters
     private val _chatStarters = MutableStateFlow<List<Map<String, Any>>>(emptyList())
     val chatStarters: StateFlow<List<Map<String, Any>>> = _chatStarters
 
@@ -81,6 +89,7 @@ class ProfileViewModel() : ViewModel() {
         loadUserProfile()
     }
 
+    // fetch a list of users that have started a chat with the band that the current user is a member of
     fun fetchBandChatStarters() {
         val currentUserId = FirebaseAuth.getInstance().currentUser?.uid ?: return
 
@@ -124,6 +133,7 @@ class ProfileViewModel() : ViewModel() {
         }
     }
 
+    // check if the current user is following a specific user based on his/her user ID
     fun checkIfFollowing(targetUserId: String) {
         val currentUserRef =
             auth.currentUser?.uid?.let { firestore.collection("users").document(it) } ?: return
@@ -135,26 +145,27 @@ class ProfileViewModel() : ViewModel() {
             Log.e("ProfileViewModel", "Error checking follow status", e)
         }
     }
-    // Inside ProfileViewModel
+
+    // Function to toggle the current user's follow status for a specific user by its ID.
     fun toggleFollowUser(targetUserId: String) {
         val currentUserRef = auth.currentUser?.uid?.let { firestore.collection("users").document(it) } ?: return
         val targetUserRef = firestore.collection("users").document(targetUserId)
 
         _isFollowing.value?.let { alreadyFollowing ->
             if (alreadyFollowing) {
-                // Unfollow
+                // if the user is already following, unfollow the target user
                 currentUserRef.update("following", FieldValue.arrayRemove(targetUserRef))
                 targetUserRef.update("followers", FieldValue.arrayRemove(currentUserRef))
                 _isFollowing.value = false
             } else {
-                // Follow
+                // Follow user if not already following
                 currentUserRef.update("following", FieldValue.arrayUnion(targetUserRef))
                 targetUserRef.update("followers", FieldValue.arrayUnion(currentUserRef))
                 _isFollowing.value = true
             }
         }
     }
-
+    // fetches the current users role
     fun fetchCurrentUserRole() {
         val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
         val db = FirebaseFirestore.getInstance()
@@ -170,6 +181,7 @@ class ProfileViewModel() : ViewModel() {
     }
 
 
+    // fetches the user details from who the current user is following
     fun fetchUserDetailsFromFollowing() {
         viewModelScope.launch {
             try {
@@ -209,12 +221,8 @@ class ProfileViewModel() : ViewModel() {
     }
 
 
-
-
-
-
-
-
+    // Function to asynchronously fetch the counts of following and followers for a given user ID.
+// The function accepts an optional parameter `userIdParam` which can be null.
     fun fetchFollowCounts(userIdParam: String? = null) {
         val userIdToUse = userIdParam ?: auth.currentUser?.uid
         userIdToUse?.let { userId ->
@@ -240,7 +248,7 @@ class ProfileViewModel() : ViewModel() {
     fun fetchProfileImageUrlByUserId(userId: String) {
         // Check if the URL is already cached to avoid refetching
         if (_profileImageUrls.value.containsKey(userId)) return
-//        Log.d("Test",userId)
+
         // Define the path in Firebase Storage where the profile image is stored
         val storageRef = storage.reference.child("images/$userId/profile_picture.jpg")
 
@@ -287,6 +295,8 @@ class ProfileViewModel() : ViewModel() {
 
 
 
+    // Function to asynchronously fetch the profile image url for a given user ID.
+// The function accepts an optional parameter `userIdParam` which can be null.
     fun fetchProfileImageUrl(userIdParam: String? = null) {
         // Use the provided userId if available, otherwise use the current user's userId
         val userId = userIdParam ?: auth.currentUser?.uid ?: return
@@ -349,6 +359,7 @@ class ProfileViewModel() : ViewModel() {
                 onFailure(exception)
             }
     }
+    // Updates the user's profile with a new name and email.
     fun updateUserProfile(
         name: String,
         email: String,
@@ -356,11 +367,13 @@ class ProfileViewModel() : ViewModel() {
         onSuccess: () -> Unit,
         onFailure: (Exception) -> Unit
     ) {
+        // Check if a user with the given email exists in the database.
         val usersCollection = FirebaseFirestore.getInstance().collection("users")
 
         usersCollection.whereEqualTo("email", email).get()
             .addOnSuccessListener { querySnapshot ->
                 if (querySnapshot.documents.isNotEmpty()) {
+                    // Update user's name and email if user exists.
                     val userDoc = querySnapshot.documents[0]
                     val updates = hashMapOf(
                         "name" to name,
@@ -370,18 +383,21 @@ class ProfileViewModel() : ViewModel() {
                     usersCollection.document(userDoc.id)
                         .set(updates, SetOptions.merge())
                         .addOnSuccessListener {
+                            // Show success message and invoke success callback.
                             CoroutineScope(Dispatchers.Main).launch {
                                 Toast.makeText(context, "Profile updated successfully", Toast.LENGTH_SHORT).show()
                             }
                             onSuccess()
                         }
                         .addOnFailureListener { exception ->
+                            // Show error message and invoke failure callback on failure.
                             CoroutineScope(Dispatchers.Main).launch {
                                 Toast.makeText(context, exception.message ?: "Failed to update profile", Toast.LENGTH_SHORT).show()
                             }
                             onFailure(exception)
                         }
                 } else {
+                    // Handle case where no user is found with the provided email.
                     CoroutineScope(Dispatchers.Main).launch {
                         Toast.makeText(context, "No user found with email: $email", Toast.LENGTH_SHORT).show()
                     }
@@ -396,7 +412,7 @@ class ProfileViewModel() : ViewModel() {
             }
     }
 
-
+    // Updates the user's password
     fun updateUserPassword(
         oldPassword: String,
         newPassword: String,

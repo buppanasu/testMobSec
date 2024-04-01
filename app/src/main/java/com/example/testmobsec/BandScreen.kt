@@ -175,7 +175,7 @@ fun BandScreen(navController: NavController = rememberNavController(),bandId: St
 
 
 
-
+    // The Scaffold composable provides a consistent layout structure with a top app bar and padding
     Scaffold( topBar = { TopAppBarContent(navController) },
         bottomBar = { BottomAppBarContent(navController) },
         floatingActionButton = { // Use the floatingActionButton parameter to add the IconButton at the bottom right

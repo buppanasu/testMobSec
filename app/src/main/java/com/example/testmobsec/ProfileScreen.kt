@@ -60,14 +60,14 @@ import coil.compose.rememberAsyncImagePainter
 import com.google.firebase.firestore.DocumentReference
 
 
-
+// Composable function that represents the entire profile screen. It includes a top app bar, a bottom app bar, and a floating action button for navigation.
 @Composable
 fun ProfileScreen(
-    navController: NavController = rememberNavController()
+    navController: NavController = rememberNavController() // Allows navigation between composables
 ) {
-    val profileViewModel: ProfileViewModel = viewModel()
-    val postsViewModel: PostViewModel = viewModel()
-    var selectedTab by remember { mutableStateOf(0) }
+    val profileViewModel: ProfileViewModel = viewModel() // ViewModel to fetch profile-related data
+    val postsViewModel: PostViewModel = viewModel() // ViewModel to fetch posts-related data
+    var selectedTab by remember { mutableStateOf(0) } // State for handling tab selection
 
     Scaffold(
         topBar = { TopAppBarContent(navController = navController) },
@@ -96,14 +96,16 @@ fun ProfileScreen(
 
 
 }
+// Composable function for displaying the tab row and its respective content based on the selected tab.
 @Composable
 fun TabRowSection(selectedTab: Int, onTabSelected: (Int) -> Unit,
                   postsViewModel: PostViewModel,profileViewModel: ProfileViewModel
 ,navController: NavController){
-    // Observe the posts list from the ViewModel
+    // The function listens to changes in posts collection from the ViewModel.
     val posts by postsViewModel.posts.collectAsState(initial = emptyList())
+    // TabRow to switch between different content sections: Posts, Comments, Likes.
     TabRow(selectedTabIndex = selectedTab) {
-        // Replace with your tabs
+        // Definition of individual tabs
         Tab(
             selected = selectedTab == 0,
             onClick = { onTabSelected(0)
@@ -127,9 +129,10 @@ fun TabRowSection(selectedTab: Int, onTabSelected: (Int) -> Unit,
     }
 
     if (selectedTab == 0) {
-        postsViewModel.fetchPostsForUser()
+        postsViewModel.fetchPostsForUser() //fetches posts the user has made
     }
     when (selectedTab) {
+        // shows posts that the user has made
         0 -> {
             val profileImageUrl by profileViewModel.profileImageUrl.collectAsState()
             LaunchedEffect(true) {
@@ -236,10 +239,11 @@ fun TabRowSection(selectedTab: Int, onTabSelected: (Int) -> Unit,
             }
         }
         1 -> {
-            postsViewModel.fetchCommentedPosts()
+            //shows the posts user has commented on
+            postsViewModel.fetchCommentedPosts() //fetches the posts the current user has commented on before
             val commentedPosts by postsViewModel.commentedPosts.collectAsState()
             val profileImageUrls by profileViewModel.profileImageUrls.collectAsState()
-            // Display posts in the first tab
+            // Display comments and their data
             LazyColumn {
                 items(commentedPosts) { postMap ->
                     val name = postMap["userName"] as? String?: "No Content"
@@ -330,12 +334,12 @@ fun TabRowSection(selectedTab: Int, onTabSelected: (Int) -> Unit,
         }
 
         2->{
-            postsViewModel.fetchLikedPosts()
+            postsViewModel.fetchLikedPosts() //fetches all post the current user has liked
             val likedPosts by postsViewModel.likedPosts.collectAsState()
             val profileImageUrls by profileViewModel.profileImageUrls.collectAsState()
 
 
-            // Display posts in the first tab
+            // Display posts that the user has liked
             LazyColumn {
                 items(likedPosts) { postMap ->
                     val name = postMap["userName"] as? String?: "No Content"
@@ -423,10 +427,10 @@ fun TabRowSection(selectedTab: Int, onTabSelected: (Int) -> Unit,
                             }
                         }
                     }
-                    // Divider to separate posts
 
 
-                    Divider()
+
+                    Divider() // Divider to separate posts
                 }
             }
 
@@ -435,28 +439,35 @@ fun TabRowSection(selectedTab: Int, onTabSelected: (Int) -> Unit,
     }
 }
 
+// This composable function displays the top section of the Profile screen. It shows the user's profile image,
+// name, and counts of posts, followers, and following. It also includes a button to edit the profile.
 @Composable
-fun ProfileTopSection(navController: NavController,
-                      profileViewModel: ProfileViewModel, postsViewModel: PostViewModel){
+fun ProfileTopSection(navController: NavController, // Navigation controller to handle navigation events.
+                      profileViewModel: ProfileViewModel, // ViewModel to fetch and hold profile data.
+                      postsViewModel: PostViewModel){ // ViewModel to fetch and hold posts data.
+    // Collect state from ProfileViewModel and PostViewModel.
     val name by profileViewModel.name.collectAsState()
     val profileImageUrl by profileViewModel.profileImageUrl.collectAsState()
     val postsCount by postsViewModel.postsCount.collectAsState()
     val followersCount by profileViewModel.followersCount.collectAsState()
     val followingCount by profileViewModel.followingCount.collectAsState()
+
+    // Fetch profile image URL, posts count for the current user, and followers/following count upon composable instantiation.
     LaunchedEffect(true) {
         profileViewModel.fetchProfileImageUrl()
         postsViewModel.fetchPostsCountForCurrentUser()
         profileViewModel.fetchFollowCounts()
     }
 
+    // Main column for the profile top section.
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .padding(8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-//        Spacer(modifier = Modifier.height(16.dp))
 
+        // Display profile image if URL is available, else show a default icon.
         profileImageUrl?.let { url ->
             Image(
                 painter = rememberAsyncImagePainter(url),
@@ -498,12 +509,12 @@ fun ProfileTopSection(navController: NavController,
             Text("$postsCount", fontWeight = FontWeight.Bold, fontSize = 25.sp)
             Text("Posts")
         }
-        //Divider(thickness = 2.dp, color = Color.Gray)
+
         Column() {
             Text("$followersCount", fontWeight = FontWeight.Bold, fontSize = 25.sp)
             Text("Followers")
         }
-        //Divider(thickness = 2.dp, color = Color.Gray)
+
         Column() {
             Text("$followingCount", fontWeight = FontWeight.Bold, fontSize = 25.sp)
             Text("Following")
@@ -516,7 +527,7 @@ fun ProfileTopSection(navController: NavController,
         horizontalArrangement = Arrangement.SpaceEvenly,
         verticalAlignment = Alignment.Top
     ) {
-        //Text("Test3")
+
         Button(onClick = {navController.navigate("edit_profile_screen")}) {
             Text("Edit Profile")
         }
@@ -524,6 +535,7 @@ fun ProfileTopSection(navController: NavController,
     }
 }
 
+// helper function to format the timestamp to simple date format of Month, date, year, hours and minutes
 @Composable
 fun formatDate(timestamp: Any?): String {
     return if (timestamp is com.google.firebase.Timestamp) {

@@ -1,5 +1,6 @@
 package com.example.testmobsec.util
 
+// Data class representing the structure of join request.
 data class JoinRequest(
     val id: String = "",
     val userId: String = "",

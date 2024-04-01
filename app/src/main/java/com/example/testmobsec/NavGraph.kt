@@ -53,32 +53,36 @@ sealed class Screen(val route:String){
 
     data object BandPostScreen: Screen(route = "bandPost_screen/{bandId}")
 }
-
+// Defines the navigation graph for the application. It sets up all the possible navigation routes and associates them with composable screens.
 @Composable
 fun NavGraph(
-    navController: NavHostController,sharedViewModel: SharedViewModel, bandViewModel: BandViewModel
+    navController: NavHostController, // The NavController that manages app navigation.
+    sharedViewModel: SharedViewModel, // A shared ViewModel that can be used by multiple composables/screens.
+    bandViewModel: BandViewModel // ViewModel specific for band operations.
 
 ) {
 
-
+    // Sets up a navigation host which dictates the composable that should be displayed based on the current route.
     NavHost(
         navController = navController,
-        startDestination = Screen.LoginScreen.route,
+        startDestination = Screen.LoginScreen.route, // Defines the initial screen of the app.
 
         ){
-//
+        // Define composable for the registration screen.
         composable(Screen.RegisterScreen.route){
             RegisterScreen(
-//
+
                 navController = navController,
                 sharedViewModel = sharedViewModel
             )
         }
+        // Define composable for the login screen
         composable(Screen.LoginScreen.route){
             LoginScreen(
                 navController = navController
             )
         }
+        // Define more routes for different screens within the app.
         composable(Screen.CreateOrJoinBandScreen.route){
             CreateOrJoinBandScreen(
                 navController = navController
@@ -94,25 +98,30 @@ fun NavGraph(
                 navController = navController
             )
         }
+        // Setup a composable for a dynamic route that includes a 'bandId' argument.
+        // This example shows setting up a dynamic route for viewing band details.
         composable(
             route = Screen.BandScreen.route,
                     arguments = listOf(navArgument("bandId") { type = NavType.StringType })
         ){
                 backStackEntry ->
-            // Extract postId
+            // Extract the 'bandId' from the backStackEntry to use in the BandScreen.
             val bandId = backStackEntry.arguments?.getString("bandId") ?: throw IllegalStateException("userId must be provided")
             BandScreen(navController = navController, bandId =  bandId)
         }
 
 
+        // Example for another dynamic route setup for other_band_screen which also requires a 'bandId'.
         composable(
             "other_band_screen/{bandId}",
             arguments = listOf(navArgument("bandId") { type = NavType.StringType })
         ) { backStackEntry ->
+            // Extract and use the 'bandId' similar to the previous example.
             val bandId = backStackEntry.arguments?.getString("bandId") ?: return@composable
             OtherBandScreen(navController, bandId, bandViewModel)
         }
 
+        // dynamic route setup
         composable(
             "chat_screen/{bandId}",
             arguments = listOf(navArgument("bandId") { type = NavType.StringType })
@@ -120,7 +129,7 @@ fun NavGraph(
             val bandId = backStackEntry.arguments?.getString("bandId") ?: return@composable
             ChatScreen(navController, bandId)
         }
-
+        // dynamic route setup
         composable(
             "bandPost_screen/{bandId}",
             arguments = listOf(navArgument("bandId") { type = NavType.StringType })
@@ -128,7 +137,7 @@ fun NavGraph(
             val bandId = backStackEntry.arguments?.getString("bandId") ?: return@composable
             BandPostScreen(navController, bandId)
         }
-
+        // dynamic route setup
         composable(
             "feedback_screen/{bandId}",
             arguments = listOf(navArgument("bandId") { type = NavType.StringType })
@@ -173,6 +182,7 @@ fun NavGraph(
                 navController = navController
             )
         }
+        // dynamic route setup
         composable(
             route = Screen.CommentScreen.route, // Use the updated route with argument
             arguments = listOf(navArgument("postId") { type = NavType.StringType }) // Define the argument
@@ -186,6 +196,7 @@ fun NavGraph(
             )
         }
 
+        // dynamic route setup
         composable(
             route = Screen.PostDetailsScreen.route,
             arguments = listOf(navArgument("postId") { type = NavType.StringType })
@@ -193,7 +204,7 @@ fun NavGraph(
             // Extract postId
             val postId = backStackEntry.arguments?.getString("postId") ?: throw IllegalStateException("postId must be provided")
             PostDetailsScreen(navController = navController, postId)
-            // Implement your PostDetailsScreen composable, which shows the post details
+
         }
 
         composable(
@@ -203,7 +214,7 @@ fun NavGraph(
             // Extract postId
             val userId = backStackEntry.arguments?.getString("userId") ?: throw IllegalStateException("userId must be provided")
             OthersProfileScreen(navController = navController, userId =  userId)
-            // Implement your PostDetailsScreen composable, which shows the post details
+
         }
 
         composable(Screen.SearchBandScreen.route){

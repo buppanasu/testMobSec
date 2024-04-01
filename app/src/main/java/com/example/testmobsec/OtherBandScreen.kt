@@ -96,7 +96,7 @@ fun OtherBandScreen(navController: NavController, bandId: String, bandViewModel:
     }
 
 
-    // UI for displaying band details
+    // The Scaffold composable provides a consistent layout structure with a top app bar and padding
     Scaffold(
         topBar = { TopAppBarContent(navController) },
         bottomBar = { BottomAppBarContent(navController) }

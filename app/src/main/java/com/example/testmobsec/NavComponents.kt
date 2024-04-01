@@ -37,26 +37,26 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.testmobsec.viewModel.BandViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
-
+// This composable function creates the bottom app bar content with navigation icons.
 @Composable
 fun BottomAppBarContent(
-    navController: NavController,
-    bandViewModel: BandViewModel = viewModel()
+    navController: NavController, // NavController to handle navigation actions.
+    bandViewModel: BandViewModel = viewModel() // Injects or provides an instance of BandViewModel.
 ) {
-    // Assume _userRole is a State variable in your ViewModel
-    val userRole by bandViewModel.userRole.collectAsState()
+
+    val userRole by bandViewModel.userRole.collectAsState() // Collects the userRole state from the BandViewModel.
 
     LaunchedEffect(Unit) {
-        bandViewModel.fetchUserRole()
+        bandViewModel.fetchUserRole() // Fetches the user's role when the component is launched.
     }
 
     BottomAppBar(
-        containerColor = MaterialTheme.colorScheme.primaryContainer,
-        contentColor = MaterialTheme.colorScheme.onPrimary,
+        containerColor = MaterialTheme.colorScheme.primaryContainer, // Sets the bottom app bar's background color.
+        contentColor = MaterialTheme.colorScheme.onPrimary, // Sets the icon and text color in the bottom app bar.
     ) {
-        IconTextButton(navController, Icons.Default.Home, "Home", "home_screen")
-        Spacer(Modifier.weight(1f, true))
-        IconTextButton(navController, Icons.Default.Search, "Search", "searchband_screen")
+        IconTextButton(navController, Icons.Default.Home, "Home", "home_screen") // Home navigation button.
+        Spacer(Modifier.weight(1f, true)) // Spacer for even distribution of icons.
+        IconTextButton(navController, Icons.Default.Search, "Search", "searchband_screen") // Search navigation button.
 
         // Conditionally show the Band icon only for ARTIST role
         if (userRole == "ARTIST") {
@@ -65,21 +65,23 @@ fun BottomAppBarContent(
                 navController,
                 Icons.Default.Add,
                 "Band",
-                onClick = { decideNavigationBasedOnBand(navController) }
+                onClick = { decideNavigationBasedOnBand(navController) } // Decides navigation based on whether the user is part of a band.
             )
         }
 
         Spacer(Modifier.weight(1f, true))
-        IconTextButton(navController, Icons.Default.Person, "Profile", "profile_screen")
+        IconTextButton(navController, Icons.Default.Person, "Profile", "profile_screen") // Profile navigation button.
     }
 }
-
+// This composable function creates the top app bar content with title and action icons based on the current navigation route.
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TopAppBarContent(navController: NavController) {
-    val currentBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = currentBackStackEntry?.destination?.route
+    val currentBackStackEntry by navController.currentBackStackEntryAsState() // Observes the current navigation stack.
+    val currentRoute = currentBackStackEntry?.destination?.route // Retrieves the current route.
+    // Determines the title of the top app bar based on the currentRoute.
     val title = when{
+        // Add cases for matching routes and setting respective titles.
         currentRoute?.startsWith("home_screen") == true -> "Home"
         currentRoute?.startsWith("profile_screen") == true -> "Profile"
         currentRoute?.startsWith("post_screen") == true -> "Upload Post"
@@ -103,13 +105,16 @@ fun TopAppBarContent(navController: NavController) {
         else -> "App"
     }
 
+    // Center aligned top app bar configuration with dynamic title and actions.
     CenterAlignedTopAppBar(
-        title = { Text(text = title, color = Color.White) },
+        title = { Text(text = title, color = Color.White) }, // Sets the dynamic title.
+        // Configures the colors of the top app bar elements.
         colors = TopAppBarDefaults.topAppBarColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer,
             titleContentColor = MaterialTheme.colorScheme.primary,
         ),
         navigationIcon = {
+            // Conditional rendering of back navigation icon for specific screens.
             if(currentRoute == "edit_profile_screen"){
                 IconButton(onClick = { navController.navigate("profile_screen")  }) {
                     Icon(
@@ -131,6 +136,7 @@ fun TopAppBarContent(navController: NavController) {
 
         },
         actions = {
+            // Defines action icons dynamically based on the current route.
             if(currentRoute == "profile_screen") {
                 // Display settings icon when on the profile screen
                 IconButton(onClick = { navController.navigate("edit_profile_screen") }) {
@@ -179,7 +185,7 @@ fun getCurrentRoute(navController: NavController): String? {
     return navBackStackEntry?.destination?.route
 }
 
-
+// Composable function for creating an icon button with a label. It navigates to a specified screen when clicked.
 @Composable
 fun IconTextButton(
     navController: NavController,
@@ -187,9 +193,10 @@ fun IconTextButton(
     text: String,
     navigateTo: String
 ) {
+    // Layout for the button, consisting of an icon and a text label, aligned vertically.
     Column(
         modifier = Modifier
-            .clickable { navController.navigate(navigateTo) }
+            .clickable { navController.navigate(navigateTo) } // Navigates to the specified route when clicked.
             .padding(8.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -197,13 +204,15 @@ fun IconTextButton(
         Text(text = text, style = MaterialTheme.typography.labelSmall)
     }
 }
+// Similar to IconTextButton but with a custom onClick action for more complex click behaviors.
 @Composable
 fun IconTextButton2(
     navController: NavController,
     icon: ImageVector,
     text: String,
-    onClick: () -> Unit
+    onClick: () -> Unit // Custom click action passed as a lambda function.
 ) {
+    // Layout for the button with a custom click action.
     Column(
         modifier = Modifier
             .clickable(onClick = onClick) // Use the provided onClick lambda here

@@ -61,7 +61,7 @@ fun FeedbackScreen(
 
     }
 
-
+    // The Scaffold composable provides a consistent layout structure with a top app bar and padding
     Scaffold(
         topBar = { TopAppBarContent(navController = navController) },
     ) { paddingValues ->

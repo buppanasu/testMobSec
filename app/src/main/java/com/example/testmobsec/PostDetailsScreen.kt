@@ -49,6 +49,7 @@ fun PostDetailsScreen(
         postsViewModel.fetchCommentsForPost(postId)
     }
 
+    // The Scaffold composable provides a consistent layout structure with a top app bar and padding
     Scaffold(
         topBar = { TopAppBarContent(navController = navController) },
         // BottomBar or FloatingActionButton can be added here if needed
@@ -62,12 +63,6 @@ fun PostDetailsScreen(
                 val postTimestamp = post["timestamp"]
                 val userId = postUserDocRef?.id.toString()
                 val postImageUrl = profileImageUrls[userId]
-//                val isLiked by postsViewModel.isPostLikedByUser(postId)
-//                    .collectAsState(initial = false)
-//                val likesCountFlow = postsViewModel.getLikesCountFlow(postId)
-//                val likesCount by likesCountFlow.collectAsState()
-//                val commentsCountFlow = postsViewModel.getCommentsCountFlow(postId)
-//                val commentsCount by commentsCountFlow.collectAsState()
                 LaunchedEffect(userId) {
                     profileViewModel.fetchProfileImageUrlByUserId(userId)
                 }
@@ -218,8 +213,3 @@ fun PostItem(userId: String, userName: String, content: String, imageUrl: String
 
 
 
-//@Preview(showBackground = true)
-//@Composable
-//fun PreviewCommentScreen() {
-//    CommentScreen()
-//}

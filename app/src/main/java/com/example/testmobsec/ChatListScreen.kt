@@ -89,6 +89,7 @@ fun ChatListScreen(navController: NavController, bandViewModel: BandViewModel = 
         userName.contains(searchQuery, ignoreCase = true)
     }
 
+    // The Scaffold composable provides a consistent layout structure with a top app bar and padding
     Scaffold(
         topBar = { TopAppBarContent(navController) },
         bottomBar = { BottomAppBarContent(navController) }

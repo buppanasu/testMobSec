@@ -57,21 +57,25 @@ import com.example.testmobsec.viewModel.PostViewModel
 import com.example.testmobsec.viewModel.ProfileViewModel
 import com.google.firebase.firestore.DocumentReference
 
-
+// Define a Composable function for the HomeScreen. This function sets up the layout and navigation for the home screen.
 @Composable
 fun HomeScreen(navController: NavController = rememberNavController()) {
+    // Obtain ViewModel instances for posts, profile, and bands.
     val postsViewModel: PostViewModel = viewModel()
     val profileViewModel: ProfileViewModel = viewModel()
     val bandViewModel: BandViewModel = viewModel()
-    var selectedTab by remember { mutableStateOf(0) }
+    var selectedTab by remember { mutableStateOf(0) } // Remember the selected tab state.
+    // Setup the Scaffold layout which includes a top bar and a bottom bar.
     Scaffold(
         topBar = { TopAppBarContent(navController = navController) },
         bottomBar = { BottomAppBarContent(navController) }
     ){
             paddingValues ->
+        // Define the content layout within the Scaffold.
         Column(modifier = Modifier
             .fillMaxSize()
             .padding(paddingValues)) {
+            // Include the HomeTabSection which is responsible for displaying different content based on the selected tab.
             HomeTabSection(selectedTab = selectedTab, onTabSelected = { tab ->
                 selectedTab = tab
             }, postsViewModel = postsViewModel, profileViewModel, navController, bandViewModel)
@@ -84,15 +88,16 @@ fun HomeScreen(navController: NavController = rememberNavController()) {
 
         }
     }
-
+// HomePostsSection defines the UI and behavior for displaying a list of posts in the "Home" section made by all users.
 @Composable
 fun HomePostsSection(postsViewModel: PostViewModel, profileViewModel: ProfileViewModel, navController: NavController) {
     val posts by postsViewModel.posts.collectAsState(initial = emptyList())
     postsViewModel.fetchPostsForHome()
     val profileImageUrls by profileViewModel.profileImageUrls.collectAsState()
-
+    // Use LazyColumn to efficiently display a potentially large list of items.
     LazyColumn {
         items(posts) { postMap ->
+            // For each post, extract relevant information like user ID, post ID, likes, and comments.
             val userDocRef = postMap["userId"] as? DocumentReference
             val postId = postMap["postId"] as String
             val likesCount by postsViewModel.getLikesCountFlow(postId).collectAsState()
@@ -107,6 +112,7 @@ fun HomePostsSection(postsViewModel: PostViewModel, profileViewModel: ProfileVie
             val timestamp = postMap["timestamp"]
             val imageUrl = profileImageUrls[userId]
 
+            // Display each post item using the PostItem composable.
             if (timestamp != null) {
                 PostItem(
                     imageUrl = imageUrl,
@@ -125,6 +131,7 @@ fun HomePostsSection(postsViewModel: PostViewModel, profileViewModel: ProfileVie
     }
 }
 
+// FollowingPostsSection is similar to HomePostsSection but tailored for displaying posts from followed bands and other users .
 @Composable
 fun FollowingPostsSection(
     postsViewModel: PostViewModel,
@@ -166,6 +173,7 @@ fun FollowingPostsSection(
 }
 
 
+// HomeTabSection manages the tab layout at the top of the Home screen, allowing users to switch between different views.
             @Composable
             fun HomeTabSection(
                 selectedTab: Int,
@@ -179,9 +187,9 @@ fun FollowingPostsSection(
                 val posts by postsViewModel.posts.collectAsState(initial = emptyList())
 
                 // State for nested tabs in the "Following" tab
-//                var selectedFollowingTab by remember { mutableStateOf(0) }
+
                 TabRow(selectedTabIndex = selectedTab) {
-                    // Replace with your tabs
+
                     Tab(
                         selected = selectedTab == 0,
                         onClick = {
@@ -200,11 +208,13 @@ fun FollowingPostsSection(
                 }
                 when (selectedTab) {
                     0 -> {
+                        // display the home posts section if the selected tab is 0
                         HomePostsSection(postsViewModel, profileViewModel, navController)
                     }
 
                     1 -> {
 
+                        // display the following bands section if the selected tab is 1
                         FollowingBandsSection(postsViewModel, navController, bandViewModel)
                         Divider()
 
@@ -212,7 +222,7 @@ fun FollowingPostsSection(
 
                 }
             }
-
+// Composable function to display an individual band item that the user follows. It shows the band's image and name.
 @Composable
 fun FollowedBandItem(bandName: String, imageUrl: String, bandId: String, navController: NavController) {
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(8.dp)) {
@@ -240,15 +250,17 @@ fun FollowedBandItem(bandName: String, imageUrl: String, bandId: String, navCont
     }
 }
 
+// Composable function to display the sections related to bands that the current user is following, including a list of bands and their posts.
 @Composable
 fun FollowingBandsSection(postsViewModel: PostViewModel, navController: NavController, bandViewModel: BandViewModel) {
-
+    // Trigger the fetching of bands the current user follows and their posts.
     bandViewModel.fetchBandsCurrentUserFollows()
     val followedBandPosts by  postsViewModel.followedBandPosts.collectAsState(initial = emptyList())
     postsViewModel.fetchPostsForFollowedBands()
     val followedBands by bandViewModel.followedBands.collectAsState()
 
     Column {
+        // Row to display the "My Bands" title and an add button to navigate to the search band screen.
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -265,16 +277,17 @@ fun FollowingBandsSection(postsViewModel: PostViewModel, navController: NavContr
                 Icon(
                     imageVector = Icons.Default.Add,
                     contentDescription = "Add",
-                    modifier = Modifier.size(24.dp) // Adjust the size as needed
+                    modifier = Modifier.size(24.dp)
                 )
             }
         }
-
+        // Display the list of followed bands horizontally.
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             modifier = Modifier.padding(horizontal = 16.dp)
         ) {
             items(followedBands) { band ->
+                // Use the FollowedBandItem composable to display each band.
                 FollowedBandItem(
                     bandName = band["bandName"] as? String ?: "Unknown",
                     imageUrl = band["imageUrl"] as? String ?: "No Content",
@@ -285,48 +298,16 @@ fun FollowingBandsSection(postsViewModel: PostViewModel, navController: NavContr
                 val imageUrl = band["imageUrl"] as? String ?: "No Content"
                 val bandId = band["bandId"] as? String ?: "No Content"
 
-//                Box(
-//                    modifier = Modifier
-//                        .padding(8.dp)
-//                        .size(100.dp) // Set a larger size for your band images
-//                ) {
-//                    if (imageUrl != "No Content") {
-//                        Image(
-//                            painter = rememberAsyncImagePainter(imageUrl),
-//                            contentDescription = "$bandName Image",
-//                            modifier = Modifier
-//                                .fillMaxSize()
-//                                .clip(CircleShape)
-//                                .border(2.dp, Color.Gray, CircleShape) // Add a border 2.dp wide with Gray color, also circle-shaped
-//                                .clickable {
-//                                    navController.navigate("other_band_screen/$bandId")
-//                                },
-//                        )
-//                    } else {
-//                        // Placeholder for no image
-//                        Box(
-//                            modifier = Modifier
-//                                .fillMaxSize()
-//                                .clip(CircleShape)
-//                                .background(Color.LightGray),
-//                            contentAlignment = Alignment.Center
-//                        ) {
-//                            Text(text = bandName.first().toString(), style = MaterialTheme.typography.headlineMedium)
-//                        }
-//                    }
-//                    Text(
-//                        text = bandName,
-//                        modifier = Modifier.align(Alignment.BottomCenter),
-//                        style = MaterialTheme.typography.bodyMedium
-//                    )
-//                }
+
             }
 
         }
 
-        Divider()
+        Divider() //Visual separation
+        // LazyColumn to display posts from the followed bands.
         LazyColumn {
             items(followedBandPosts) { postMap ->
+                // For each post, extract details and display them.
                 val bandName = postMap["bandName"] as? String ?: "No Content"
                 val content = postMap["content"] as? String ?: "No Content"
                 val imageUrl = postMap["imageUrl"] as? String ?: "No Content"
@@ -443,13 +424,13 @@ fun FollowingBandsSection(postsViewModel: PostViewModel, navController: NavContr
 
     }
 }
-
+// Composable function to display a single post item with details such as the author's name, post content, and interaction buttons.
 @Composable
 fun PostItem(
     imageUrl: String?,
     name: String,
     content: String,
-    timestamp: Any, // Replace with the appropriate type
+    timestamp: Any,
     commentsCount: Int,
     likesCount: Int,
     userId: String,
@@ -463,6 +444,7 @@ fun PostItem(
             .clickable { navController.navigate("postDetails_screen/$postId") }
             .padding(8.dp)
     ) {
+        // Layout for the author's image or icon and the post details.
         Row(verticalAlignment = Alignment.Top) {
             if (imageUrl != null) {
                 Image(
@@ -496,6 +478,7 @@ fun PostItem(
                 )
             }
         }
+        // Interaction row for comments and likes.
         Row(verticalAlignment = Alignment.CenterVertically) {
             val hasCommented by postsViewModel.hasUserCommented(postId).collectAsState(initial = false)
             IconButton(onClick = { navController.navigate("comment_screen/$postId") }) {

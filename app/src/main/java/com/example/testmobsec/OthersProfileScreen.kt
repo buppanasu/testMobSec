@@ -57,6 +57,8 @@ fun OthersProfileScreen(navController: NavController = rememberNavController(), 
     val profileViewModel: ProfileViewModel = viewModel()
     val postsViewModel: PostViewModel = viewModel()
     var selectedTab by remember { mutableStateOf(0) }
+
+    // The Scaffold composable provides a consistent layout structure with a top app bar and padding
     Scaffold(
         topBar = { TopAppBarContent(navController = navController) },
         // BottomBar or FloatingActionButton can be added here if needed

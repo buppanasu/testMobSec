@@ -21,8 +21,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
 class BandViewModel : ViewModel() {
-    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
-    private val userId = auth.currentUser?.uid
+    private val auth: FirebaseAuth = FirebaseAuth.getInstance()     // Firebase authentication instance for managing user sessions.
+    private val userId = auth.currentUser?.uid // Current user's ID, extracted from the Firebase Auth instance.
     private val firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
     private val storage: FirebaseStorage = FirebaseStorage.getInstance()
     private val _allBands = MutableStateFlow<List<Band>>(emptyList())
@@ -117,8 +117,8 @@ class BandViewModel : ViewModel() {
         }
     }
 
-    // Extend your existing BandViewModel with new functionality
 
+    // fetches all bands
     fun fetchAllBands() {
         viewModelScope.launch {
             try {
@@ -138,6 +138,7 @@ class BandViewModel : ViewModel() {
         }
     }
 
+    // fetches bands and their details based on the current user and who he follows
     fun fetchBandsCurrentUserFollows() {
         viewModelScope.launch {
             try {
@@ -172,10 +173,7 @@ class BandViewModel : ViewModel() {
     }
 
 
-
-
-
-
+    // fetch band details based on a specific band by its ID
     fun fetchBandDetails(bandId: String) {
         viewModelScope.launch {
             try {
@@ -209,6 +207,7 @@ class BandViewModel : ViewModel() {
         }
     }
 
+    // fetches join requests based on the specific band by its ID
     fun fetchJoinRequests(bandId: String) {
         viewModelScope.launch {
             firestore.collection("bands").document(bandId)
@@ -224,6 +223,7 @@ class BandViewModel : ViewModel() {
         }
     }
 
+    // fetches user details based on a list of userId's given
     private fun fetchUserDetails(userIds: List<String>) {
         userIds.forEach { userId ->
             firestore.collection("users").document(userId)
@@ -240,6 +240,7 @@ class BandViewModel : ViewModel() {
         }
     }
 
+    // fetches the current users role
     fun fetchUserRole() {
         val userId = FirebaseAuth.getInstance().currentUser?.uid
         if (userId != null) {
@@ -274,6 +275,7 @@ class BandViewModel : ViewModel() {
     private val _isFollowing = MutableStateFlow<Boolean?>(null)
     val isFollowing: StateFlow<Boolean?> = _isFollowing
 
+    // Function to check if the current user is following a specific band by its ID.
     fun checkIfFollowingBand(targetBandId: String) {
         val currentUserRef =
             auth.currentUser?.uid?.let { firestore.collection("users").document(it) } ?: return
@@ -285,7 +287,7 @@ class BandViewModel : ViewModel() {
             Log.e("ProfileViewModel", "Error checking follow status", e)
         }
     }
-
+    // Function to toggle the current user's follow status for a specific band by its ID.
     fun toggleFollowBand(targetBandId: String) {
         val currentUserRef = auth.currentUser?.uid?.let { firestore.collection("users").document(it) } ?: return
 

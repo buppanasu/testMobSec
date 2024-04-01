@@ -2,6 +2,7 @@ package com.example.testmobsec.util
 
 import com.google.firebase.firestore.DocumentReference
 
+// Data class representing the structure of user data entity.
 data class UserData(
     var email: String = "",
     var name: String = "",

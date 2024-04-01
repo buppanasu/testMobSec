@@ -40,19 +40,22 @@ fun BandPostScreen(
     navController: NavController = rememberNavController(),
 bandId: String
     ) {
-    val profileViewModel: ProfileViewModel = viewModel()
-    // State to store the bandId once we retrieve it from Firestore
-    var bandIdState by remember { mutableStateOf<String?>(null) }
-    val user = FirebaseAuth.getInstance().currentUser
-    val postViewModel: PostViewModel = viewModel()
-    val bandViewModel: BandViewModel = viewModel()
-    val context = LocalContext.current
-    val focusRequester = remember { FocusRequester() }
-    val keyboardController = LocalSoftwareKeyboardController.current
-    var postText by remember { mutableStateOf("") }
-    val profileImageUrl by profileViewModel.profileImageUrl.collectAsState()
+    val profileViewModel: ProfileViewModel = viewModel() // Instantiate the ProfileViewModel to fetch the profile image URL.
 
-    val bandProfileImageUrl by bandViewModel.bandProfileImageUrl.collectAsState()
+    var bandIdState by remember { mutableStateOf<String?>(null) } // State to store the bandId once we retrieve it from Firestore
+
+    val user = FirebaseAuth.getInstance().currentUser // Get the current user.
+    val postViewModel: PostViewModel = viewModel() // Instantiate the PostViewModel to upload the post.
+    val bandViewModel: BandViewModel = viewModel() // Instantiate the BandViewModel to fetch the band's profile image URL.
+    val context = LocalContext.current  // Get the context.
+    val focusRequester = remember { FocusRequester() } // Create a FocusRequester to request focus to the text field.
+    val keyboardController = LocalSoftwareKeyboardController.current // Get the keyboard controller.
+    var postText by remember { mutableStateOf("") } // State to store the post text.
+    val profileImageUrl by profileViewModel.profileImageUrl.collectAsState() // Observe the profile image URL from the ProfileViewModel.
+
+    val bandProfileImageUrl by bandViewModel.bandProfileImageUrl.collectAsState() // Observe the band's profile image URL from the BandViewModel.
+
+    // Create an ImagePainter for the band's profile image.
     val bandImagePainter = rememberAsyncImagePainter(
         model = ImageRequest.Builder(LocalContext.current)
             .data(data = bandProfileImageUrl)
@@ -68,10 +71,11 @@ bandId: String
 
     }
 
-
+    // The Scaffold composable provides a consistent layout structure with a top app bar.
     Scaffold(
         topBar = { TopAppBarContent(navController = navController) },
     ) { paddingValues ->
+        // Request focus to the text field and show the keyboard on composable load.
         LaunchedEffect(Unit) {
             focusRequester.requestFocus()
             keyboardController?.show()
@@ -81,7 +85,7 @@ bandId: String
         Column(modifier = Modifier.padding(paddingValues)) {
             Row(modifier = Modifier.weight(1f)) {
                 profileImageUrl?.let { url ->
-                                        // When image is clicked, show dialog to confirm image change
+                    // When image is clicked, show dialog to confirm image change
                     Image(
                         painter = bandImagePainter,
                         contentDescription = "Band Image",
@@ -90,6 +94,7 @@ bandId: String
                             .clip(CircleShape)
                     )
                 }  ?: Text("No profile image available")
+                // BasicTextField for the post text.
                 BasicTextField(
                     value = postText,
                     onValueChange = { postText = it },
@@ -100,22 +105,27 @@ bandId: String
                     textStyle = TextStyle(
                         fontSize = 24.sp, // Set the font size bigger
                     ),
-                    // Add more parameters as needed for styling and functionality
+
                 )
 
             }
             Spacer(modifier = Modifier.height(8.dp))
+            // Button to upload the post.
             Button(
                 onClick = {
+                    // Upload the post using the PostViewModel.
                     postViewModel.uploadBandPost(
                         bandId = bandId,
                         content = postText,
                         context = context,
                         onSuccess = {
+                            // Show a toast message on success.
                             Toast.makeText(context, "Post created successfully", Toast.LENGTH_SHORT).show()
+                            // Navigate to the band screen.
                             navController.navigate("band_screen/$bandId")
                         },
                         onFailure = { exception ->
+                            // Show a toast message on failure.
                             Toast.makeText(context, "Failed to post: ${exception.localizedMessage}", Toast.LENGTH_LONG).show()
                         }
                     )

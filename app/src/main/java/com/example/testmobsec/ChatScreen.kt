@@ -37,6 +37,7 @@ import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
+// The ChatScreen composable function defines the UI for a chat screen between two users.
 @Composable
 fun ChatScreen(
     navController: NavController = rememberNavController(),
@@ -46,10 +47,14 @@ fun ChatScreen(
 
     // Instantiate the ViewModel with senderId (current user's ID) and receiverId (band's ID)
     val chatViewModel: ChatViewModel = viewModel(factory = ChatViewModelFactory(id))
+
+    // Observe the chats, user name, current user name, and user band ID from the ChatViewModel.
     val chats by chatViewModel.chats.collectAsState()
     val userName by chatViewModel.userName.collectAsState()
     val currentName by chatViewModel.currentName.collectAsState()
     val userBandId by chatViewModel.userBandId.collectAsState()
+
+    // Fetch the band's name, current user's name, and user's role and band ID when the screen is first displayed.
     LaunchedEffect(true){
         chatViewModel.fetchNameById(id)
         chatViewModel.fetchCurrentUserName()
@@ -57,10 +62,7 @@ fun ChatScreen(
     }
 
 
-
-
-
-
+    // The Scaffold composable provides a consistent layout structure with a top app bar and bottom bar.
     Scaffold(
         topBar = { TopAppBarContent(navController = navController) },
         bottomBar = { BottomAppBarContent(navController) }
@@ -68,7 +70,7 @@ fun ChatScreen(
             paddingValues->
             Column {
 
-
+                // Display the chat messages in a LazyColumn.
                 userName?.let {
                     currentName?.let { it1 ->
                         ChatMessagesUI(chats,id, it, it1,
@@ -79,11 +81,13 @@ fun ChatScreen(
 
                     }
 }
+// The ChatMessagesUI composable function defines the UI for displaying the chat messages.
 @Composable
 fun ChatMessagesUI(chats: List<Chat>,id: String,userName:String,currentName:String, chatViewModel: ChatViewModel,userBandId: String?, modifier: Modifier = Modifier) {
     val listState = rememberLazyListState()
 //    val scope = rememberCoroutineScope()
 
+    // Scroll to the bottom of the chat when a new message is added.
     LaunchedEffect(chats.size) {
         if (chats.isNotEmpty()) {
             listState.animateScrollToItem(chats.size - 1)
@@ -91,6 +95,8 @@ fun ChatMessagesUI(chats: List<Chat>,id: String,userName:String,currentName:Stri
     }
 
     val currentUserID = FirebaseAuth.getInstance().currentUser?.uid ?: return
+
+    // The Box composable is used to position the chat messages and input field.
     Box(
         modifier = modifier.fillMaxSize()) {
         Column {
@@ -118,11 +124,13 @@ fun ChatMessagesUI(chats: List<Chat>,id: String,userName:String,currentName:Stri
                             horizontalAlignment = if (chat.senderId == currentUserID) Alignment.End else Alignment.Start,
                             modifier = Modifier.padding(4.dp)
                         ) {
+                            // Display the sender's name.
                             Text(
                                 text = chat.senderName,
                                 style = MaterialTheme.typography.titleMedium.copy(color = MaterialTheme.colorScheme.secondary),
                                 modifier = Modifier.padding(bottom = 2.dp)
                             )
+                            // Display the chat message.
                             Text(
                                 text = chat.message,
                                 style = MaterialTheme.typography.bodyMedium,
@@ -155,6 +163,7 @@ fun ChatMessagesUI(chats: List<Chat>,id: String,userName:String,currentName:Stri
         Button(
             onClick = {
                 if (newMessageText.isNotEmpty()) {
+                    // Create a new chat object with the current user's ID, name, receiver's name, receiver's ID, message, and timestamp.
                     val newChat = Chat(
                         senderId = currentUserID,
                         senderName = currentName,
@@ -163,7 +172,7 @@ fun ChatMessagesUI(chats: List<Chat>,id: String,userName:String,currentName:Stri
                         message = newMessageText,
                         timestamp = System.currentTimeMillis()
                     )
-                    chatViewModel.sendChat(newChat)
+                    chatViewModel.sendChat(newChat) // Send the new chat message using the ChatViewModel.
                     newMessageText = "" // Clear input field after sending
                 }
             },

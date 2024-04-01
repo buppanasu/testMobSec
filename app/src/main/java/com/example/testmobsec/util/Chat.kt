@@ -1,6 +1,6 @@
 package com.example.testmobsec.util
 
-
+// Data class representing the structure of a chat message entity.
 data class Chat(
     var senderId: String = "",
     var receiverId: String = "",

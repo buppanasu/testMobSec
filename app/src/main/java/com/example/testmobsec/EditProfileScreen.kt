@@ -56,59 +56,64 @@ import androidx.navigation.compose.rememberNavController
 import coil.compose.rememberAsyncImagePainter
 import com.example.testmobsec.util.UserRole
 import com.example.testmobsec.viewModel.ProfileViewModel
-
+// Main composable function for the Edit Profile Screen.
 @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
 @Composable
 fun EditProfileScreen(
-    navController: NavController = rememberNavController(),
+    navController: NavController = rememberNavController(), // Navigation controller for navigating between screens.
 
 ) {
-    val profileViewModel: ProfileViewModel = viewModel()
+    val profileViewModel: ProfileViewModel = viewModel() // Accessing the ProfileViewModel.
+
 
     Scaffold(
         bottomBar = { BottomAppBarContent(navController) }
     ) {
         paddingValue ->
-        EditProfileSection(navController, paddingValue,profileViewModel)
+        EditProfileSection(navController, paddingValue,profileViewModel) // The main content of the Edit Profile screen.
     }
     }
-
+// Composable function for the Edit Profile section.
 @Composable
 fun EditProfileSection(
     navController: NavController, paddingValue: PaddingValues,
     profileViewModel: ProfileViewModel
 ){
     val context = LocalContext.current // Get the context
+
+    // Observing LiveData from the ViewModel and initializing state variables.
     val name by profileViewModel.name.collectAsState()
     val email by profileViewModel.email.collectAsState()
 
+    // State variables for user inputs.
     var nameText by remember { mutableStateOf(name ?: "") }
     var emailText by remember { mutableStateOf(email ?: "") }
-
     var oldPassword by remember { mutableStateOf("") }
     var newPassword by remember { mutableStateOf("") }
     var confirmNewPassword by remember { mutableStateOf("") }
 
+    // Validating form inputs.
     val isFormValid = remember(oldPassword, newPassword, confirmNewPassword) {
         oldPassword.isNotEmpty() && newPassword.isNotEmpty() && confirmNewPassword.isNotEmpty()
     }
 
-    // state for reauth
+    // Additional state variables for reauthentication and dialog visibility.
     var reauthPassword by remember { mutableStateOf("") }
     var showReauthDialog by remember { mutableStateOf(false) }
 
     val profileImageUrl by profileViewModel.profileImageUrl.collectAsState()
 
     LaunchedEffect(name, email) {
+        // Effect to update name and email states when they change.
         nameText = name ?: ""
         emailText = email ?: ""
-        profileViewModel.fetchProfileImageUrl()
+        profileViewModel.fetchProfileImageUrl() // Fetching the profile image URL.
     }
 
-        // Content of your screen
-        Column(modifier = Modifier.fillMaxSize()) {
 
-            //This column is for filling up of input
+        Column(modifier = Modifier.fillMaxSize()) {
+            // Main content layout for editing profile information.
+
             Row(){
                 IconButton(onClick = { navController.navigate("profile_screen") }) {
                     Icon(Icons.Filled.ArrowBack, contentDescription = "Favorite")
