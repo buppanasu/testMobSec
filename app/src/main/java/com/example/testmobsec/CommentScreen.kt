@@ -34,13 +34,15 @@ import com.example.testmobsec.viewModel.ProfileViewModel
 fun CommentScreen(
     navController: NavController = rememberNavController(),
     postId: String
-    ) {
+) {
     // The ProfileViewModel and PostViewModel are used to manage the data and logic related to the profile image and the comment creation process, respectively.
     val profileViewModel: ProfileViewModel = viewModel()
     val postViewModel: PostViewModel = viewModel()
     val context = LocalContext.current // The context is used to display toast messages.
-    val focusRequester = remember { FocusRequester() } // The focusRequester is used to request focus on the text field.
-    val keyboardController = LocalSoftwareKeyboardController.current // The keyboardController is used to show and hide the software keyboard.
+    val focusRequester =
+        remember { FocusRequester() } // The focusRequester is used to request focus on the text field.
+    val keyboardController =
+        LocalSoftwareKeyboardController.current // The keyboardController is used to show and hide the software keyboard.
     var commentText by remember { mutableStateOf("") } // The commentText state variable is used to store the content of the comment entered by the user.
     val profileImageUrl by profileViewModel.profileImageUrl.collectAsState() // The profileImageUrl state variable is used to store the URL of the profile image.
 
@@ -68,7 +70,7 @@ fun CommentScreen(
                             .clip(CircleShape)
                             .border(1.5.dp, MaterialTheme.colorScheme.primary, CircleShape)
                     )
-                }  ?: Text("No profile image available")
+                } ?: Text("No profile image available")
                 BasicTextField(
                     value = commentText,
                     onValueChange = { commentText = it },
@@ -87,12 +89,16 @@ fun CommentScreen(
             Spacer(modifier = Modifier.height(8.dp))
             Button(
                 onClick = {
-                    if(commentText.isNotBlank()) { // Check to ensure the comment is not empty
-                        postViewModel.addCommentToPost(postId, commentText) // Add the comment to the post using the PostViewModel
+                    if (commentText.isNotBlank()) { // Check to ensure the comment is not empty
+                        postViewModel.addCommentToPost(
+                            postId,
+                            commentText
+                        ) // Add the comment to the post using the PostViewModel
                         keyboardController?.hide() // Optionally hide the keyboard
                         navController.popBackStack() // Navigate back after commenting
                     } else {
-                        Toast.makeText(context, "Comment cannot be empty", Toast.LENGTH_SHORT).show()
+                        Toast.makeText(context, "Comment cannot be empty", Toast.LENGTH_SHORT)
+                            .show()
                     }
 
                 },

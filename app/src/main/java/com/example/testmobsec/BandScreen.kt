@@ -1,5 +1,5 @@
-
 package com.example.testmobsec
+
 import android.net.Uri
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -43,11 +43,18 @@ import com.google.firebase.firestore.FieldValue
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BandScreen(navController: NavController = rememberNavController(),bandId: String, bandViewModel: BandViewModel = viewModel()) {
+fun BandScreen(
+    navController: NavController = rememberNavController(),
+    bandId: String,
+    bandViewModel: BandViewModel = viewModel()
+) {
+    // Context and user authentication setup. The `LocalContext` provides access to the current context within Composables.
     val context = LocalContext.current
-    val user = FirebaseAuth.getInstance().currentUser
+    val user = FirebaseAuth.getInstance().currentUser // Current authenticated user.
+    // ViewModel instances for handling band and post data.
     val postsViewModel: PostViewModel = viewModel()
     val profileViewModel: ProfileViewModel = viewModel()
+    // State declarations for managing UI data like band details, members, posts, and feedback.
     val bandDetails = remember { mutableStateOf<Band?>(null) }
     val memberNames = remember { mutableStateListOf<String>() }
     val bandPosts by postsViewModel.bandPosts.collectAsState(initial = emptyList())
@@ -57,7 +64,7 @@ fun BandScreen(navController: NavController = rememberNavController(),bandId: St
     val bandPostsCount by postsViewModel.bandPostsCount.collectAsState()
     var currentTab by remember { mutableStateOf("Feed") }
     val bandProfileImageUrl by bandViewModel.bandProfileImageUrl.collectAsState()
-    var isBandCreator = remember {mutableStateOf(false)}
+    var isBandCreator = remember { mutableStateOf(false) }
     var showJoinRequestsOverlay by remember { mutableStateOf(false) }
     val joinRequestIds = remember { mutableStateListOf<String>() }
     val firestore = FirebaseFirestore.getInstance()
@@ -72,7 +79,9 @@ fun BandScreen(navController: NavController = rememberNavController(),bandId: St
     )
 
     LaunchedEffect(user) {
+        // Fetch band details and members once the user is available. Utilizes Firebase Firestore for data retrieval.
         user?.let { firebaseUser ->
+            // Fetch band details and member names asynchronously.
             FirebaseFirestore.getInstance().collection("users").document(firebaseUser.uid)
                 .get().addOnSuccessListener { documentSnapshot ->
                     val bandId = documentSnapshot.getString("bandId")
@@ -87,9 +96,9 @@ fun BandScreen(navController: NavController = rememberNavController(),bandId: St
                                 // Now fetch the names of each member
                                 band?.members?.forEach { memberId ->
                                     val userId = memberId.substringAfterLast("/")
-                                    FirebaseFirestore.getInstance().collection("users").document(userId)
-                                        .get().addOnSuccessListener {
-                                                userSnapshot ->
+                                    FirebaseFirestore.getInstance().collection("users")
+                                        .document(userId)
+                                        .get().addOnSuccessListener { userSnapshot ->
                                             val name = userSnapshot.getString("name")
                                             if (name != null) {
 
@@ -106,12 +115,14 @@ fun BandScreen(navController: NavController = rememberNavController(),bandId: St
 
     }
 
+    // Load join requests when the overlay is to be shown. Clears previous data for a fresh start.
     LaunchedEffect(showJoinRequestsOverlay) {
         Log.d("BandScreen", "Fetching join requests: $showJoinRequestsOverlay")
         if (showJoinRequestsOverlay) {
             joinRequestUserNames.clear()
             firestore.collection("bands").document(bandId)
                 .get().addOnSuccessListener { document ->
+                    // Process each join request to fetch user names.
                     val joinRequestIdsList =
                         document["joinRequests"] as? List<String> ?: emptyList()
                     Log.d("BandScreen", "Join request IDs: $joinRequestIdsList")
@@ -145,7 +156,8 @@ fun BandScreen(navController: NavController = rememberNavController(),bandId: St
     // Fetch if the user is the band creator on composable load or when user changes
     LaunchedEffect(key1 = user) {
         user?.let { firebaseUser ->
-            val userDocRef = FirebaseFirestore.getInstance().collection("users").document(firebaseUser.uid)
+            val userDocRef =
+                FirebaseFirestore.getInstance().collection("users").document(firebaseUser.uid)
             userDocRef.get().addOnSuccessListener { userSnapshot ->
                 // Assuming 'isBandCreator' is a Boolean field in your user document
                 isBandCreator.value = userSnapshot.getBoolean("isBandCreator") == true
@@ -155,7 +167,7 @@ fun BandScreen(navController: NavController = rememberNavController(),bandId: St
         }
     }
 
-    // Dialog state to confirm image change
+    // Dialog for confirming the action to change the band's profile picture.
     var showImageChangeDialog by remember { mutableStateOf(false) }
 
     // Handle image picking result
@@ -173,32 +185,22 @@ fun BandScreen(navController: NavController = rememberNavController(),bandId: St
     }
 
 
-
-
     // The Scaffold composable provides a consistent layout structure with a top app bar and padding
-    Scaffold( topBar = { TopAppBarContent(navController) },
+    Scaffold(
+        topBar = { TopAppBarContent(navController) },
         bottomBar = { BottomAppBarContent(navController) },
         floatingActionButton = { // Use the floatingActionButton parameter to add the IconButton at the bottom right
-            FloatingActionButton(onClick = { navController.navigate("bandPost_screen/$bandId")}) {
+            FloatingActionButton(onClick = { navController.navigate("bandPost_screen/$bandId") }) {
                 Icon(Icons.Filled.Add, contentDescription = "Add")
             }
         },
-        floatingActionButtonPosition = FabPosition.End) {paddingValues ->
+        floatingActionButtonPosition = FabPosition.End
+    ) { paddingValues ->
         Surface(modifier = Modifier.fillMaxSize()) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(paddingValues)) {
-
-
-
-                // ... Your existing UI code
-                // Top bar with settings icon, not functional in this example
-//                TopAppBar(title = { Text("Band Details") }, actions = {
-//                    IconButton(onClick = { /* Handle settings click */ }) {
-//                        Icon(
-//                            painter = painterResource(id = R.drawable.ic_launcher_foreground),
-//                            contentDescription = "Settings"
-//                        )
-//                    }
-//                })
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(paddingValues)
+            ) {
 
                 Spacer(Modifier.height(50.dp))
 
@@ -263,7 +265,6 @@ fun BandScreen(navController: NavController = rememberNavController(),bandId: St
                 Spacer(Modifier.height(8.dp))
 
 
-
                 // Follower stats
                 Row(
                     modifier = Modifier
@@ -292,6 +293,7 @@ fun BandScreen(navController: NavController = rememberNavController(),bandId: St
 
                 // When you want to show the overlay, e.g. in response to a button click
                 if (showJoinRequestsOverlay) {
+                    // Overlay for handling join requests with options to accept or reject.
                     JoinRequestsOverlay(
                         joinRequestUserNames = joinRequestUserNames,
                         joinRequestIds = joinRequestIds,
@@ -319,6 +321,7 @@ fun BandScreen(navController: NavController = rememberNavController(),bandId: St
                 // Tabs for Posts, Artists, and Feed
                 val tabTitles = listOf("Posts", "Artists", "Feed")
                 var selectedTab by remember { mutableStateOf(0) }
+                // Tabs for navigating between different sections of the band screen.
                 TabRow(selectedTabIndex = selectedTab) {
                     tabTitles.forEachIndexed { index, title ->
                         Tab(
@@ -357,12 +360,18 @@ fun BandScreen(navController: NavController = rememberNavController(),bandId: St
                                     Column { // Column for the image and action buttons
                                         if (bandProfileImageUrl != null) {
                                             Image(
-                                                painter = rememberAsyncImagePainter(bandProfileImageUrl),
+                                                painter = rememberAsyncImagePainter(
+                                                    bandProfileImageUrl
+                                                ),
                                                 contentDescription = "Band Image",
                                                 modifier = Modifier
                                                     .size(50.dp) // Larger for visibility
                                                     .clip(CircleShape)
-                                                    .border(1.dp, MaterialTheme.colorScheme.onSurface, CircleShape) // Border for definition
+                                                    .border(
+                                                        1.dp,
+                                                        MaterialTheme.colorScheme.onSurface,
+                                                        CircleShape
+                                                    ) // Border for definition
                                             )
                                         } else {
                                             Text(
@@ -377,7 +386,9 @@ fun BandScreen(navController: NavController = rememberNavController(),bandId: St
                                             modifier = Modifier.padding(top = 8.dp) // Space between image and action buttons
                                         ) {
                                             // Comments count and button
-                                            val hasCommented by postsViewModel.hasUserCommented(postId).collectAsState(initial = false)
+                                            val hasCommented by postsViewModel.hasUserCommented(
+                                                postId
+                                            ).collectAsState(initial = false)
                                             IconButton(onClick = { navController.navigate("comment_screen/$postId") }) {
                                                 Icon(
                                                     Icons.Filled.Comment,
@@ -395,7 +406,8 @@ fun BandScreen(navController: NavController = rememberNavController(),bandId: St
                                             Spacer(modifier = Modifier.width(24.dp)) // Spacing between comment and like buttons
 
                                             // Likes count and button
-                                            val likeIconColor = if (isLiked) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant
+                                            val likeIconColor =
+                                                if (isLiked) MaterialTheme.colorScheme.secondary else MaterialTheme.colorScheme.onSurfaceVariant
                                             IconButton(onClick = { postsViewModel.toggleLike(postId) }) {
                                                 Icon(
                                                     Icons.Filled.ThumbUp,
@@ -418,11 +430,16 @@ fun BandScreen(navController: NavController = rememberNavController(),bandId: St
                                     Column(
                                         modifier = Modifier
                                             .weight(1f)
-                                            .padding(start = 8.dp, end = 4.dp) // Start padding for spacing from the image, end padding for spacing from edge
+                                            .padding(
+                                                start = 8.dp,
+                                                end = 4.dp
+                                            ) // Start padding for spacing from the image, end padding for spacing from edge
                                     ) {
                                         Text(
                                             text = bandName,
-                                            style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                                            style = MaterialTheme.typography.titleMedium.copy(
+                                                fontWeight = FontWeight.Bold
+                                            )
                                         )
                                         Text(
                                             text = content,
@@ -439,7 +456,6 @@ fun BandScreen(navController: NavController = rememberNavController(),bandId: St
                             }
                         }
                     }
-
 
 
                     1 -> {
@@ -499,7 +515,11 @@ fun BandScreen(navController: NavController = rememberNavController(),bandId: St
                                             modifier = Modifier
                                                 .size(60.dp) // Adjust the size if necessary
                                                 .clip(CircleShape)
-                                                .border(1.5.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                                                .border(
+                                                    1.5.dp,
+                                                    MaterialTheme.colorScheme.primary,
+                                                    CircleShape
+                                                )
                                         )
 
                                         // Add action icons below the image here if necessary
@@ -534,6 +554,7 @@ fun BandScreen(navController: NavController = rememberNavController(),bandId: St
         }
     }
 }
+
 @Composable
 fun JoinRequestsOverlay(
     joinRequestUserNames: List<String>,
@@ -623,10 +644,12 @@ fun acceptJoinRequest(bandId: String, userId: String, bandName: String) {
     batch.update(bandDocRef, "joinRequests", FieldValue.arrayRemove(userId))
 
     // Add bandId and bandName to the user's document
-    batch.update(userDocRef, mapOf(
-        "bandId" to bandId,
-        "bandName" to bandName
-    ))
+    batch.update(
+        userDocRef, mapOf(
+            "bandId" to bandId,
+            "bandName" to bandName
+        )
+    )
 
     // Commit the batch operation
     batch.commit().addOnSuccessListener {

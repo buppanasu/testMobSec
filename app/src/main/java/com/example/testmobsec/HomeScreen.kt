@@ -69,28 +69,32 @@ fun HomeScreen(navController: NavController = rememberNavController()) {
     Scaffold(
         topBar = { TopAppBarContent(navController = navController) },
         bottomBar = { BottomAppBarContent(navController) }
-    ){
-            paddingValues ->
+    ) { paddingValues ->
         // Define the content layout within the Scaffold.
-        Column(modifier = Modifier
-            .fillMaxSize()
-            .padding(paddingValues)) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
             // Include the HomeTabSection which is responsible for displaying different content based on the selected tab.
             HomeTabSection(selectedTab = selectedTab, onTabSelected = { tab ->
                 selectedTab = tab
             }, postsViewModel = postsViewModel, profileViewModel, navController, bandViewModel)
 
 
-
-
         }
 
 
-        }
     }
+}
+
 // HomePostsSection defines the UI and behavior for displaying a list of posts in the "Home" section made by all users.
 @Composable
-fun HomePostsSection(postsViewModel: PostViewModel, profileViewModel: ProfileViewModel, navController: NavController) {
+fun HomePostsSection(
+    postsViewModel: PostViewModel,
+    profileViewModel: ProfileViewModel,
+    navController: NavController
+) {
     val posts by postsViewModel.posts.collectAsState(initial = emptyList())
     postsViewModel.fetchPostsForHome()
     val profileImageUrls by profileViewModel.profileImageUrls.collectAsState()
@@ -167,64 +171,70 @@ fun FollowingPostsSection(
                     postsViewModel = postsViewModel
                 )
             }
-            Divider( thickness =  10.dp)
+            Divider(thickness = 10.dp)
         }
     }
 }
 
 
 // HomeTabSection manages the tab layout at the top of the Home screen, allowing users to switch between different views.
-            @Composable
-            fun HomeTabSection(
-                selectedTab: Int,
-                onTabSelected: (Int) -> Unit,
-                postsViewModel: PostViewModel,
-                profileViewModel: ProfileViewModel,
-                navController: NavController,
-                bandViewModel: BandViewModel
-            ) {
-                // Observe the posts list from the ViewModel
-                val posts by postsViewModel.posts.collectAsState(initial = emptyList())
+@Composable
+fun HomeTabSection(
+    selectedTab: Int,
+    onTabSelected: (Int) -> Unit,
+    postsViewModel: PostViewModel,
+    profileViewModel: ProfileViewModel,
+    navController: NavController,
+    bandViewModel: BandViewModel
+) {
+    // Observe the posts list from the ViewModel
+    val posts by postsViewModel.posts.collectAsState(initial = emptyList())
 
-                // State for nested tabs in the "Following" tab
+    // State for nested tabs in the "Following" tab
 
-                TabRow(selectedTabIndex = selectedTab) {
+    TabRow(selectedTabIndex = selectedTab) {
 
-                    Tab(
-                        selected = selectedTab == 0,
-                        onClick = {
-                            onTabSelected(0)
-                        },
-                        text = { Text("For You") }
+        Tab(
+            selected = selectedTab == 0,
+            onClick = {
+                onTabSelected(0)
+            },
+            text = { Text("For You") }
 
 
-                    )
-                    Tab(
-                        selected = selectedTab == 1,
-                        onClick = { onTabSelected(1) },
-                        text = { Text("Following") }
-                    )
+        )
+        Tab(
+            selected = selectedTab == 1,
+            onClick = { onTabSelected(1) },
+            text = { Text("Following") }
+        )
 
-                }
-                when (selectedTab) {
-                    0 -> {
-                        // display the home posts section if the selected tab is 0
-                        HomePostsSection(postsViewModel, profileViewModel, navController)
-                    }
+    }
+    when (selectedTab) {
+        0 -> {
+            // display the home posts section if the selected tab is 0
+            HomePostsSection(postsViewModel, profileViewModel, navController)
+        }
 
-                    1 -> {
+        1 -> {
 
-                        // display the following bands section if the selected tab is 1
-                        FollowingBandsSection(postsViewModel, navController, bandViewModel)
-                        Divider()
+            // display the following bands section if the selected tab is 1
+            FollowingBandsSection(postsViewModel, navController, bandViewModel)
+            Divider()
 
-                    }
+        }
 
-                }
-            }
+    }
+}
+
 // Composable function to display an individual band item that the user follows. It shows the band's image and name.
 @Composable
-fun FollowedBandItem(bandName: String, imageUrl: String, bandId: String, navController: NavController) {
+fun FollowedBandItem(
+    bandName: String,
+    imageUrl: String,
+    bandId: String,
+    navController: NavController
+) {
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(8.dp)) {
         Box(
             modifier = Modifier
@@ -252,10 +262,14 @@ fun FollowedBandItem(bandName: String, imageUrl: String, bandId: String, navCont
 
 // Composable function to display the sections related to bands that the current user is following, including a list of bands and their posts.
 @Composable
-fun FollowingBandsSection(postsViewModel: PostViewModel, navController: NavController, bandViewModel: BandViewModel) {
+fun FollowingBandsSection(
+    postsViewModel: PostViewModel,
+    navController: NavController,
+    bandViewModel: BandViewModel
+) {
     // Trigger the fetching of bands the current user follows and their posts.
     bandViewModel.fetchBandsCurrentUserFollows()
-    val followedBandPosts by  postsViewModel.followedBandPosts.collectAsState(initial = emptyList())
+    val followedBandPosts by postsViewModel.followedBandPosts.collectAsState(initial = emptyList())
     postsViewModel.fetchPostsForFollowedBands()
     val followedBands by bandViewModel.followedBands.collectAsState()
 
@@ -379,7 +393,8 @@ fun FollowingBandsSection(postsViewModel: PostViewModel, navController: NavContr
                     //Spacer(modifier = Modifier.height(6.dp)) // Height of the image plus additional padding
 
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        val hasCommented by postsViewModel.hasUserCommented(postId).collectAsState(initial = false)
+                        val hasCommented by postsViewModel.hasUserCommented(postId)
+                            .collectAsState(initial = false)
                         IconButton(onClick = { navController.navigate("comment_screen/$postId") }) {
                             Icon(
                                 Icons.Filled.Comment,
@@ -393,7 +408,8 @@ fun FollowingBandsSection(postsViewModel: PostViewModel, navController: NavContr
 
                         Spacer(modifier = Modifier.width(24.dp)) // Space between comment and like buttons
 
-                        val isLiked by postsViewModel.isPostLikedByUser(postId).collectAsState(initial = false)
+                        val isLiked by postsViewModel.isPostLikedByUser(postId)
+                            .collectAsState(initial = false)
                         IconButton(onClick = { postsViewModel.toggleLike(postId) }) {
                             Icon(
                                 Icons.Filled.ThumbUp,
@@ -414,16 +430,9 @@ fun FollowingBandsSection(postsViewModel: PostViewModel, navController: NavContr
         }
 
 
-
-
-
-
-
-
-
-
     }
 }
+
 // Composable function to display a single post item with details such as the author's name, post content, and interaction buttons.
 @Composable
 fun PostItem(
@@ -480,7 +489,8 @@ fun PostItem(
         }
         // Interaction row for comments and likes.
         Row(verticalAlignment = Alignment.CenterVertically) {
-            val hasCommented by postsViewModel.hasUserCommented(postId).collectAsState(initial = false)
+            val hasCommented by postsViewModel.hasUserCommented(postId)
+                .collectAsState(initial = false)
             IconButton(onClick = { navController.navigate("comment_screen/$postId") }) {
                 Icon(
                     imageVector = Icons.Filled.Comment,

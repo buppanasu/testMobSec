@@ -55,7 +55,7 @@ fun ChatScreen(
     val userBandId by chatViewModel.userBandId.collectAsState()
 
     // Fetch the band's name, current user's name, and user's role and band ID when the screen is first displayed.
-    LaunchedEffect(true){
+    LaunchedEffect(true) {
         chatViewModel.fetchNameById(id)
         chatViewModel.fetchCurrentUserName()
         chatViewModel.fetchUserRoleAndBand()
@@ -66,24 +66,34 @@ fun ChatScreen(
     Scaffold(
         topBar = { TopAppBarContent(navController = navController) },
         bottomBar = { BottomAppBarContent(navController) }
-    ) {
-            paddingValues->
-            Column {
+    ) { paddingValues ->
+        Column {
 
-                // Display the chat messages in a LazyColumn.
-                userName?.let {
-                    currentName?.let { it1 ->
-                        ChatMessagesUI(chats,id, it, it1,
-                            chatViewModel,userBandId, Modifier.padding(paddingValues))
-                    }
+            // Display the chat messages in a LazyColumn.
+            userName?.let {
+                currentName?.let { it1 ->
+                    ChatMessagesUI(
+                        chats, id, it, it1,
+                        chatViewModel, userBandId, Modifier.padding(paddingValues)
+                    )
                 }
             }
+        }
 
-                    }
+    }
 }
+
 // The ChatMessagesUI composable function defines the UI for displaying the chat messages.
 @Composable
-fun ChatMessagesUI(chats: List<Chat>,id: String,userName:String,currentName:String, chatViewModel: ChatViewModel,userBandId: String?, modifier: Modifier = Modifier) {
+fun ChatMessagesUI(
+    chats: List<Chat>,
+    id: String,
+    userName: String,
+    currentName: String,
+    chatViewModel: ChatViewModel,
+    userBandId: String?,
+    modifier: Modifier = Modifier
+) {
     val listState = rememberLazyListState()
 //    val scope = rememberCoroutineScope()
 
@@ -98,14 +108,15 @@ fun ChatMessagesUI(chats: List<Chat>,id: String,userName:String,currentName:Stri
 
     // The Box composable is used to position the chat messages and input field.
     Box(
-        modifier = modifier.fillMaxSize()) {
+        modifier = modifier.fillMaxSize()
+    ) {
         Column {
             // Display chat messages in a LazyColumn that fills the available space but leaves room for the input field
             LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 70.dp) // Reserve space for the input field and send button
-                ,state= listState
+                , state = listState
             ) {
                 items(chats) { chat ->
 //                    val currentUserID = FirebaseAuth.getInstance().currentUser?.uid ?: return@items

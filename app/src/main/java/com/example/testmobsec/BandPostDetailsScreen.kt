@@ -40,24 +40,33 @@ fun BandPostDetailsScreen(
     navController: NavController = rememberNavController(),
     postId: String
 ) {
+    // Initialization of ViewModel instances to manage post and profile data.
     val postsViewModel: PostViewModel = viewModel()
     val profileViewModel: ProfileViewModel = viewModel()
+
+    // State holders for comments, profile image URLs, and post details, automatically recomposed when data changes.
     val comments by postsViewModel.comments.collectAsState()
     val profileImageUrls by profileViewModel.profileImageUrls.collectAsState()
     val postDetails by postsViewModel.selectedPostDetails.collectAsState()
+
+    // Side-effects to fetch post details and comments once the postId is available.
     LaunchedEffect(postId) {
         postsViewModel.fetchPostByPostId(postId)
         postsViewModel.fetchCommentsForPost(postId)
     }
 
-    // The Scaffold composable provides a consistent layout structure with a top app bar and padding
+    // Scaffold structure for the UI with a top bar and the content body.
     Scaffold(
         topBar = { TopAppBarContent(navController = navController) },
         // BottomBar or FloatingActionButton can be added here if needed
     ) { paddingValues ->
-        Column(modifier = Modifier
-            .padding(paddingValues)) {
+        Column(
+            modifier = Modifier
+                .padding(paddingValues)
+        ) {
             postDetails?.let { post ->
+                // Local variables to hold post details, fetched once per post detail availability.
+                // Dynamically displaying the post item and a divider.
                 val postUserName = post["userName"] as? String ?: "Unknown"
                 val postContent = post["content"] as? String ?: "No Content"
                 val postUserDocRef = post["userId"] as? DocumentReference
@@ -68,14 +77,22 @@ fun BandPostDetailsScreen(
                     profileViewModel.fetchProfileImageUrlByUserId(userId)
                 }
 
-                BandPostItem(userId,userName = postUserName, content = postContent, imageUrl = postImageUrl, timestamp = postTimestamp, navController)
+                BandPostItem(
+                    userId,
+                    userName = postUserName,
+                    content = postContent,
+                    imageUrl = postImageUrl,
+                    timestamp = postTimestamp,
+                    navController
+                )
                 Divider()
-                // Display posts in the first tab
+                // LazyColumn to display comments lazily as they become visible on the screen.
                 LazyColumn(
                     modifier = Modifier
                         .padding(paddingValues)
                 ) {
                     items(comments) { postMap ->
+                        // For each comment, display the user's profile image, name, content, and action buttons (like and comment).
                         val name = postMap["userName"] as? String ?: "No Content"
                         val content = postMap["comment"] as? String ?: "No Content"
                         val postDocRef = postMap["postId"] as? DocumentReference
@@ -120,14 +137,18 @@ fun BandPostDetailsScreen(
                                 )
                                 Divider()
                                 Text(text = content, style = TextStyle(fontSize = 14.sp))
-                                Text(text = formatDate(timestamp), style = TextStyle(fontSize = 12.sp))
+                                Text(
+                                    text = formatDate(timestamp),
+                                    style = TextStyle(fontSize = 12.sp)
+                                )
                                 Spacer(modifier = Modifier.height(4.dp))
 
                             }
 
-                            val hasCommented by postsViewModel.hasUserCommented(commentPostId).collectAsState(
-                                initial = false
-                            )
+                            val hasCommented by postsViewModel.hasUserCommented(commentPostId)
+                                .collectAsState(
+                                    initial = false
+                                )
                             val commentedIconColor = if (hasCommented) Color.Magenta else Color.Gray
                             IconButton(onClick = { navController.navigate("comment_screen/$postId") }) {
                                 Icon(
@@ -166,8 +187,16 @@ fun BandPostDetailsScreen(
     }
 }
 
+// A helper composable function to display individual band post items, including the user image, name, content, and timestamp.
 @Composable
-fun BandPostItem(userId: String, userName: String, content: String, imageUrl: String?, timestamp: Any?, navController: NavController) {
+fun BandPostItem(
+    userId: String,
+    userName: String,
+    content: String,
+    imageUrl: String?,
+    timestamp: Any?,
+    navController: NavController
+) {
     Row(
         modifier = Modifier.padding(8.dp),
         verticalAlignment = Alignment.CenterVertically

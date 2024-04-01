@@ -1,7 +1,6 @@
 package com.example.testmobsec
 
 
-
 import android.widget.Toast
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.border
@@ -52,8 +51,6 @@ fun FeedbackScreen(
     val profileImageUrl by profileViewModel.profileImageUrl.collectAsState()
 
 
-
-
     // Trigger image fetching on composable load or bandId change
     LaunchedEffect(true) {
 
@@ -82,7 +79,7 @@ fun FeedbackScreen(
                             .clip(CircleShape)
                             .border(1.5.dp, MaterialTheme.colorScheme.primary, CircleShape)
                     )
-                }  ?: Text("No profile image available")
+                } ?: Text("No profile image available")
                 BasicTextField(
                     value = postText,
                     onValueChange = { postText = it },
@@ -105,11 +102,19 @@ fun FeedbackScreen(
                         feedback = postText,
                         context = context,
                         onSuccess = {
-                            Toast.makeText(context, "Feedback sent successfully", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(
+                                context,
+                                "Feedback sent successfully",
+                                Toast.LENGTH_SHORT
+                            ).show()
                             navController.popBackStack()
                         },
                         onFailure = { exception ->
-                            Toast.makeText(context, "Failed to post: ${exception.localizedMessage}", Toast.LENGTH_LONG).show()
+                            Toast.makeText(
+                                context,
+                                "Failed to post: ${exception.localizedMessage}",
+                                Toast.LENGTH_LONG
+                            ).show()
                         }
                     )
                 },

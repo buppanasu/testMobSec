@@ -53,18 +53,25 @@ import com.google.firebase.firestore.DocumentReference
 
 
 @Composable
-fun OthersProfileScreen(navController: NavController = rememberNavController(), userId: String){
+fun OthersProfileScreen(navController: NavController = rememberNavController(), userId: String) {
+    // ViewModel instances for managing profile and post data.
     val profileViewModel: ProfileViewModel = viewModel()
     val postsViewModel: PostViewModel = viewModel()
+
+    // State for managing the selected tab in the user profile.
     var selectedTab by remember { mutableStateOf(0) }
 
     // The Scaffold composable provides a consistent layout structure with a top app bar and padding
     Scaffold(
         topBar = { TopAppBarContent(navController = navController) },
         // BottomBar or FloatingActionButton can be added here if needed
-    ){paddingValues ->
-        Column(modifier = Modifier.fillMaxSize().padding(paddingValues)){
-            OthersProfileTopSection(navController,profileViewModel, postsViewModel, userId)
+    ) { paddingValues ->
+        Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+
+            // Section displaying the user's profile image, name, and statistics.
+            OthersProfileTopSection(navController, profileViewModel, postsViewModel, userId)
+
+            // Tabbed section for navigating between the user's posts, comments, and likes.
             OthersTabSection(selectedTab = selectedTab, onTabSelected = { tab ->
                 selectedTab = tab
             }, postsViewModel = postsViewModel, profileViewModel, navController, userId)
@@ -74,9 +81,13 @@ fun OthersProfileScreen(navController: NavController = rememberNavController(), 
     }
 
 }
+
+// Displays the top section of the profile, including the profile image, user's name, and key statistics like posts count, followers, and following.
 @Composable
-fun OthersProfileTopSection(navController: NavController,
-                      profileViewModel: ProfileViewModel, postsViewModel: PostViewModel, userId: String){
+fun OthersProfileTopSection(
+    navController: NavController,
+    profileViewModel: ProfileViewModel, postsViewModel: PostViewModel, userId: String
+) {
     val profileImageUrl by profileViewModel.profileImageUrl.collectAsState()
     val postsCount by postsViewModel.postsCount.collectAsState()
     val userName by profileViewModel.userName.collectAsState()
@@ -94,7 +105,7 @@ fun OthersProfileTopSection(navController: NavController,
             .fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        //Text("Test1")
+        // Display the profile image or a placeholder if unavailable.
         Spacer(modifier = Modifier.width(35.dp))
         profileImageUrl?.let { url ->
             Image(
@@ -105,13 +116,15 @@ fun OthersProfileTopSection(navController: NavController,
                     .clip(CircleShape)
                     .border(1.5.dp, MaterialTheme.colorScheme.primary, CircleShape)
             )
-        }  ?: Text("No profile image available")
+        } ?: Text("No profile image available")
         Spacer(modifier = Modifier.width(20.dp))
         Column() {
             userName?.let {
-                Text(text = it,
+                Text(
+                    text = it,
                     modifier = Modifier.paddingFromBaseline(top = 20.dp),
-                    fontSize = 23.sp)
+                    fontSize = 23.sp
+                )
             }
 
 
@@ -124,6 +137,7 @@ fun OthersProfileTopSection(navController: NavController,
         horizontalArrangement = Arrangement.SpaceEvenly,
         verticalAlignment = Alignment.Top
     ) {
+        // Display statistics: posts, followers, and following counts.
         Column() {
             Text("$postsCount", fontWeight = FontWeight.Bold, fontSize = 25.sp)
             Text("Posts")
@@ -146,7 +160,7 @@ fun OthersProfileTopSection(navController: NavController,
         horizontalArrangement = Arrangement.SpaceEvenly,
         verticalAlignment = Alignment.Top
     ) {
-
+        // Button for following or unfollowing the user, with dynamic text based on current follow state.
         val isFollowing by profileViewModel.isFollowing.collectAsState(initial = false)
         // Check the following state on composition
         LaunchedEffect(key1 = userId) {
@@ -163,30 +177,38 @@ fun OthersProfileTopSection(navController: NavController,
     }
 }
 
+// Defines a section with tabs for navigating between the user's posts, comments, and likes. Each tab displays related content in a list.
 @Composable
-fun OthersTabSection(selectedTab: Int, onTabSelected: (Int) -> Unit,
-                  postsViewModel: PostViewModel,profileViewModel: ProfileViewModel
-                  ,navController: NavController, userId: String){
-    // Observe the posts list from the ViewModel
+fun OthersTabSection(
+    selectedTab: Int,
+    onTabSelected: (Int) -> Unit,
+    postsViewModel: PostViewModel,
+    profileViewModel: ProfileViewModel,
+    navController: NavController,
+    userId: String
+) {
+    // Observe posts, comments, or likes based on the selected tab.
     val posts by postsViewModel.posts.collectAsState(initial = emptyList())
     TabRow(selectedTabIndex = selectedTab) {
-        // Replace with your tabs
+        // Defines tabs for Posts, Comments, and Likes sections.
         Tab(
+            // Display user's posts.
             selected = selectedTab == 0,
-            onClick = { onTabSelected(0)
+            onClick = {
+                onTabSelected(0)
             },
             text = { Text("Posts") }
 
-
-
         )
         Tab(
+            // Display user's commented posts.
             selected = selectedTab == 1,
             onClick = { onTabSelected(1) },
             text = { Text("Comments") }
         )
 
         Tab(
+            // Display user's liked posts.
             selected = selectedTab == 2,
             onClick = { onTabSelected(2) },
             text = { Text("Likes") }
@@ -201,11 +223,12 @@ fun OthersTabSection(selectedTab: Int, onTabSelected: (Int) -> Unit,
             // Display posts in the first tab
             LazyColumn {
                 items(posts) { postMap ->
-                    val name = postMap["userName"] as? String?: "No Content"
+                    val name = postMap["userName"] as? String ?: "No Content"
                     val content = postMap["content"] as? String ?: "No Content"
                     val timestamp = postMap["timestamp"]
                     val postId = postMap["postId"] as String
-                    val isLiked by postsViewModel.isPostLikedByUser(postId).collectAsState(initial = false)
+                    val isLiked by postsViewModel.isPostLikedByUser(postId)
+                        .collectAsState(initial = false)
                     val likesCountFlow = postsViewModel.getLikesCountFlow(postId)
                     val likesCount by likesCountFlow.collectAsState()
                     val commentsCountFlow = postsViewModel.getCommentsCountFlow(postId)
@@ -230,14 +253,15 @@ fun OthersTabSection(selectedTab: Int, onTabSelected: (Int) -> Unit,
                                     .clip(CircleShape)
                                     .border(1.5.dp, MaterialTheme.colorScheme.primary, CircleShape)
                             )
-                        }  ?: Text("No profile image available")
+                        } ?: Text("No profile image available")
                         Spacer(modifier = Modifier.width(20.dp))
                         Column(
                             modifier = Modifier
                                 .weight(1f)
                                 .padding(8.dp)
                         ) {
-                            Text(text = name, fontWeight = FontWeight.Bold,
+                            Text(
+                                text = name, fontWeight = FontWeight.Bold,
                                 style = TextStyle(fontSize = 18.sp)
                             )
                             Divider()
@@ -249,9 +273,13 @@ fun OthersTabSection(selectedTab: Int, onTabSelected: (Int) -> Unit,
                         val hasCommented by postsViewModel.hasUserCommented(postId).collectAsState(
                             initial = false
                         )
-                        val commentedIconColor = if(hasCommented) Color.Magenta else Color.Gray
+                        val commentedIconColor = if (hasCommented) Color.Magenta else Color.Gray
                         IconButton(onClick = { navController.navigate("comment_screen/$postId") }) {
-                            Icon(Icons.Filled.Comment, contentDescription = "Comment", tint = commentedIconColor)
+                            Icon(
+                                Icons.Filled.Comment,
+                                contentDescription = "Comment",
+                                tint = commentedIconColor
+                            )
                         }
                         if (commentsCount > 0) {
                             Text(text = "$commentsCount")
@@ -260,7 +288,11 @@ fun OthersTabSection(selectedTab: Int, onTabSelected: (Int) -> Unit,
                         // Like button with real-time color change based on like status
                         val likeIconColor = if (isLiked) Color.Blue else Color.Gray
                         IconButton(onClick = { postsViewModel.toggleLike(postId) }) {
-                            Icon(Icons.Filled.ThumbUp, contentDescription = "Like", tint = likeIconColor)
+                            Icon(
+                                Icons.Filled.ThumbUp,
+                                contentDescription = "Like",
+                                tint = likeIconColor
+                            )
                         }
 
                         // Display likes count, updating in real-time
@@ -272,6 +304,7 @@ fun OthersTabSection(selectedTab: Int, onTabSelected: (Int) -> Unit,
                 }
             }
         }
+
         1 -> {
             postsViewModel.fetchCommentedPosts(userId)
             val commentedPosts by postsViewModel.commentedPosts.collectAsState()
@@ -279,11 +312,12 @@ fun OthersTabSection(selectedTab: Int, onTabSelected: (Int) -> Unit,
             // Display posts in the first tab
             LazyColumn {
                 items(commentedPosts) { postMap ->
-                    val name = postMap["userName"] as? String?: "No Content"
+                    val name = postMap["userName"] as? String ?: "No Content"
                     val content = postMap["content"] as? String ?: "No Content"
                     val timestamp = postMap["timestamp"]
                     val postId = postMap["postId"] as String
-                    val isLiked by postsViewModel.isPostLikedByUser(postId).collectAsState(initial = false)
+                    val isLiked by postsViewModel.isPostLikedByUser(postId)
+                        .collectAsState(initial = false)
                     val likesCountFlow = postsViewModel.getLikesCountFlow(postId)
                     val likesCount by likesCountFlow.collectAsState()
                     val userDocRef = postMap["userId"] as? DocumentReference
@@ -315,7 +349,8 @@ fun OthersTabSection(selectedTab: Int, onTabSelected: (Int) -> Unit,
                                 .weight(1f)
                                 .padding(8.dp)
                         ) {
-                            Text(text = name, fontWeight = FontWeight.Bold,
+                            Text(
+                                text = name, fontWeight = FontWeight.Bold,
                                 style = TextStyle(fontSize = 18.sp)
                             )
                             Divider()
@@ -327,9 +362,13 @@ fun OthersTabSection(selectedTab: Int, onTabSelected: (Int) -> Unit,
                         val hasCommented by postsViewModel.hasUserCommented(postId).collectAsState(
                             initial = false
                         )
-                        val commentedIconColor = if(hasCommented) Color.Magenta else Color.Gray
+                        val commentedIconColor = if (hasCommented) Color.Magenta else Color.Gray
                         IconButton(onClick = { navController.navigate("comment_screen/$postId") }) {
-                            Icon(Icons.Filled.Comment, contentDescription = "Comment", tint = commentedIconColor)
+                            Icon(
+                                Icons.Filled.Comment,
+                                contentDescription = "Comment",
+                                tint = commentedIconColor
+                            )
                         }
                         if (commentsCount > 0) {
                             Text(text = "$commentsCount")
@@ -338,7 +377,11 @@ fun OthersTabSection(selectedTab: Int, onTabSelected: (Int) -> Unit,
                         // Like button with real-time color change based on like status
                         val likeIconColor = if (isLiked) Color.Blue else Color.Gray
                         IconButton(onClick = { postsViewModel.toggleLike(postId) }) {
-                            Icon(Icons.Filled.ThumbUp, contentDescription = "Like", tint = likeIconColor)
+                            Icon(
+                                Icons.Filled.ThumbUp,
+                                contentDescription = "Like",
+                                tint = likeIconColor
+                            )
                         }
 
                         // Display likes count, updating in real-time
@@ -351,7 +394,7 @@ fun OthersTabSection(selectedTab: Int, onTabSelected: (Int) -> Unit,
             }
         }
 
-        2->{
+        2 -> {
             postsViewModel.fetchLikedPosts(userId)
             val likedPosts by postsViewModel.likedPosts.collectAsState()
 //            val profileImageUrl by profileViewModel.profileImageUrl.collectAsState()
@@ -361,11 +404,12 @@ fun OthersTabSection(selectedTab: Int, onTabSelected: (Int) -> Unit,
             // Display posts in the first tab
             LazyColumn {
                 items(likedPosts) { postMap ->
-                    val name = postMap["userName"] as? String?: "No Content"
+                    val name = postMap["userName"] as? String ?: "No Content"
                     val content = postMap["content"] as? String ?: "No Content"
                     val timestamp = postMap["timestamp"]
                     val postId = postMap["postId"] as String
-                    val isLiked by postsViewModel.isPostLikedByUser(postId).collectAsState(initial = false)
+                    val isLiked by postsViewModel.isPostLikedByUser(postId)
+                        .collectAsState(initial = false)
                     val likesCountFlow = postsViewModel.getLikesCountFlow(postId)
                     val likesCount by likesCountFlow.collectAsState()
                     val userDocRef = postMap["userId"] as? DocumentReference
@@ -397,7 +441,8 @@ fun OthersTabSection(selectedTab: Int, onTabSelected: (Int) -> Unit,
                                 .weight(1f)
                                 .padding(8.dp)
                         ) {
-                            Text(text = name, fontWeight = FontWeight.Bold,
+                            Text(
+                                text = name, fontWeight = FontWeight.Bold,
                                 style = TextStyle(fontSize = 18.sp)
                             )
                             Divider()
@@ -410,9 +455,13 @@ fun OthersTabSection(selectedTab: Int, onTabSelected: (Int) -> Unit,
                         val hasCommented by postsViewModel.hasUserCommented(postId).collectAsState(
                             initial = false
                         )
-                        val commentedIconColor = if(hasCommented) Color.Magenta else Color.Gray
+                        val commentedIconColor = if (hasCommented) Color.Magenta else Color.Gray
                         IconButton(onClick = { navController.navigate("comment_screen/$postId") }) {
-                            Icon(Icons.Filled.Comment, contentDescription = "Comment", tint = commentedIconColor)
+                            Icon(
+                                Icons.Filled.Comment,
+                                contentDescription = "Comment",
+                                tint = commentedIconColor
+                            )
                         }
                         if (commentsCount > 0) {
                             Text(text = "$commentsCount")
@@ -421,7 +470,11 @@ fun OthersTabSection(selectedTab: Int, onTabSelected: (Int) -> Unit,
                         // Like button with real-time color change based on like status
                         val likeIconColor = if (isLiked) Color.Blue else Color.Gray
                         IconButton(onClick = { postsViewModel.toggleLike(postId) }) {
-                            Icon(Icons.Filled.ThumbUp, contentDescription = "Like", tint = likeIconColor)
+                            Icon(
+                                Icons.Filled.ThumbUp,
+                                contentDescription = "Like",
+                                tint = likeIconColor
+                            )
                         }
 
                         // Display likes count, updating in real-time

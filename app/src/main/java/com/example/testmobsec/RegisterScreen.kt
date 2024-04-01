@@ -45,10 +45,13 @@ import java.io.ByteArrayOutputStream
 
 @Composable
 //fun RegisterScreen(haredViewModel: SharedViewModel)
-fun RegisterScreen(sharedViewModel: SharedViewModel,navController: NavController = rememberNavController()){
-    var email:String by remember { mutableStateOf("") }
-    var name:String by remember { mutableStateOf("") }
-    var password:String by remember { mutableStateOf("") }
+fun RegisterScreen(
+    sharedViewModel: SharedViewModel,
+    navController: NavController = rememberNavController()
+) {
+    var email: String by remember { mutableStateOf("") }
+    var name: String by remember { mutableStateOf("") }
+    var password: String by remember { mutableStateOf("") }
     // State to track the selected role
     var selectedRole by remember { mutableStateOf(UserRole.USER) }
 
@@ -112,7 +115,11 @@ fun RegisterScreen(sharedViewModel: SharedViewModel,navController: NavController
     }
 
     //This column is for filling up of input
-    Column(modifier = Modifier.fillMaxSize().padding(50.dp), verticalArrangement = Arrangement.Center, horizontalAlignment = Alignment.CenterHorizontally){
+    Column(
+        modifier = Modifier.fillMaxSize().padding(50.dp),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
         Image(
             painter = painterResource(id = R.drawable.signupscreenimage),
             contentDescription = ""
@@ -170,27 +177,24 @@ fun RegisterScreen(sharedViewModel: SharedViewModel,navController: NavController
         Spacer(modifier = Modifier.height(10.dp))
         // Radio button for user
         Row {
-            Text(text = "Signup as:", fontSize = 15.sp, modifier = Modifier.paddingFromBaseline(top = 28.dp))
+            Text(
+                text = "Signup as:",
+                fontSize = 15.sp,
+                modifier = Modifier.paddingFromBaseline(top = 28.dp)
+            )
             RadioButton(
                 selected = selectedRole == UserRole.USER,
                 onClick = { selectedRole = UserRole.USER }
             )
             Text("User", modifier = Modifier.paddingFromBaseline(top = 28.dp))
-            // Radio button for event manager
-            RadioButton(
-                selected = selectedRole == UserRole.EVENT_MANAGER,
-                onClick = { selectedRole = UserRole.EVENT_MANAGER }
-            )
-            Text("Event Manager", modifier = Modifier.paddingFromBaseline(top = 28.dp))
-        }
-        Row{
+
             RadioButton(
                 selected = selectedRole == UserRole.ARTIST,
                 onClick = { selectedRole = UserRole.ARTIST }
             )
             Text("Artist", modifier = Modifier.paddingFromBaseline(top = 28.dp))
-        }
 
+        }
         Button(onClick = {
             var isValid = true // Assuming inputs are valid initially
 
@@ -207,13 +211,23 @@ fun RegisterScreen(sharedViewModel: SharedViewModel,navController: NavController
                         if (task.isSuccessful) {
                             // User created successfully, now store additional data
                             val userId = task.result.user!!.uid
-                            sharedViewModel.uploadDefaultProfileImage(userId,defaultImageByteArray, context)
+                            sharedViewModel.uploadDefaultProfileImage(
+                                userId,
+                                defaultImageByteArray,
+                                context
+                            )
                             val userData = UserData(name = name, email = email, role = selectedRole)
-                            FirebaseFirestore.getInstance().collection("users").document(userId).set(userData)
+                            FirebaseFirestore.getInstance().collection("users").document(userId)
+                                .set(userData)
                                 .addOnSuccessListener {
                                     // Data stored successfully
-                                    sharedViewModel.saveData(userData = userData,defaultImageByteArray, context = context)
-                                    Toast.makeText(context, "Register Success!", Toast.LENGTH_SHORT).show()
+                                    sharedViewModel.saveData(
+                                        userData = userData,
+                                        defaultImageByteArray,
+                                        context = context
+                                    )
+                                    Toast.makeText(context, "Register Success!", Toast.LENGTH_SHORT)
+                                        .show()
                                     navController.navigate("login_screen")
                                 }
                                 .addOnFailureListener { e ->
@@ -229,10 +243,10 @@ fun RegisterScreen(sharedViewModel: SharedViewModel,navController: NavController
                 // Optionally, show a toast or log if validation fails
                 Toast.makeText(context, "Please check your inputs", Toast.LENGTH_SHORT).show()
             }
-        }){
+        }) {
             Text("Register")
         }
-        Button( onClick = {navController.navigate("login_screen")}){
+        Button(onClick = { navController.navigate("login_screen") }) {
             Text("Login Here")
         }
     }

@@ -76,15 +76,13 @@ fun ChatListScreen(navController: NavController, bandViewModel: BandViewModel = 
     val filteredBands = allBands.filter {
         it.bandName.contains(searchQuery, ignoreCase = true)
     }
-    val filteredUsers = followedUsers.filter {
-            user ->
+    val filteredUsers = followedUsers.filter { user ->
         val userName = user["name"] as? String ?: ""
         userName.contains(searchQuery, ignoreCase = true)
     }
 
 
-    val filteredChatStarters = chatStarters.filter {
-            user ->
+    val filteredChatStarters = chatStarters.filter { user ->
         val userName = user["name"] as? String ?: ""
         userName.contains(searchQuery, ignoreCase = true)
     }
@@ -105,10 +103,9 @@ fun ChatListScreen(navController: NavController, bandViewModel: BandViewModel = 
                 keyboardOptions = KeyboardOptions.Default.copy(imeAction = ImeAction.Search),
                 modifier = Modifier.fillMaxWidth().padding(16.dp)
             )
-            if(userRole=="ARTIST"){
+            if (userRole == "ARTIST") {
                 DisplayChatStarters(filteredChatStarters, navController)
-            }
-            else{
+            } else {
 
 
                 // Tabs for selection
@@ -197,8 +194,13 @@ fun DisplayBands(bands: List<Band>, navController: NavController) {
         }
     }
 }
+
 @Composable
-fun ChatBandItem(band: Band, navController: NavController, bandViewModel: BandViewModel = viewModel()) {
+fun ChatBandItem(
+    band: Band,
+    navController: NavController,
+    bandViewModel: BandViewModel = viewModel()
+) {
     Card(
         modifier = Modifier
             .padding(8.dp) // Add padding around the card for proper spacing in the grid.

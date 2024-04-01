@@ -38,17 +38,21 @@ import com.google.firebase.auth.FirebaseAuth
 @Composable
 fun BandPostScreen(
     navController: NavController = rememberNavController(),
-bandId: String
-    ) {
-    val profileViewModel: ProfileViewModel = viewModel() // Instantiate the ProfileViewModel to fetch the profile image URL.
+    bandId: String
+) {
+    val profileViewModel: ProfileViewModel =
+        viewModel() // Instantiate the ProfileViewModel to fetch the profile image URL.
 
     var bandIdState by remember { mutableStateOf<String?>(null) } // State to store the bandId once we retrieve it from Firestore
 
     val user = FirebaseAuth.getInstance().currentUser // Get the current user.
-    val postViewModel: PostViewModel = viewModel() // Instantiate the PostViewModel to upload the post.
-    val bandViewModel: BandViewModel = viewModel() // Instantiate the BandViewModel to fetch the band's profile image URL.
+    val postViewModel: PostViewModel =
+        viewModel() // Instantiate the PostViewModel to upload the post.
+    val bandViewModel: BandViewModel =
+        viewModel() // Instantiate the BandViewModel to fetch the band's profile image URL.
     val context = LocalContext.current  // Get the context.
-    val focusRequester = remember { FocusRequester() } // Create a FocusRequester to request focus to the text field.
+    val focusRequester =
+        remember { FocusRequester() } // Create a FocusRequester to request focus to the text field.
     val keyboardController = LocalSoftwareKeyboardController.current // Get the keyboard controller.
     var postText by remember { mutableStateOf("") } // State to store the post text.
     val profileImageUrl by profileViewModel.profileImageUrl.collectAsState() // Observe the profile image URL from the ProfileViewModel.
@@ -67,7 +71,7 @@ bandId: String
     // Trigger image fetching on composable load or bandId change
     LaunchedEffect(true) {
 
-            bandViewModel.fetchBandProfileImageUrl(bandId)
+        bandViewModel.fetchBandProfileImageUrl(bandId)
 
     }
 
@@ -93,7 +97,7 @@ bandId: String
                             .size(120.dp)
                             .clip(CircleShape)
                     )
-                }  ?: Text("No profile image available")
+                } ?: Text("No profile image available")
                 // BasicTextField for the post text.
                 BasicTextField(
                     value = postText,
@@ -106,7 +110,7 @@ bandId: String
                         fontSize = 24.sp, // Set the font size bigger
                     ),
 
-                )
+                    )
 
             }
             Spacer(modifier = Modifier.height(8.dp))
@@ -120,13 +124,18 @@ bandId: String
                         context = context,
                         onSuccess = {
                             // Show a toast message on success.
-                            Toast.makeText(context, "Post created successfully", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Post created successfully", Toast.LENGTH_SHORT)
+                                .show()
                             // Navigate to the band screen.
                             navController.navigate("band_screen/$bandId")
                         },
                         onFailure = { exception ->
                             // Show a toast message on failure.
-                            Toast.makeText(context, "Failed to post: ${exception.localizedMessage}", Toast.LENGTH_LONG).show()
+                            Toast.makeText(
+                                context,
+                                "Failed to post: ${exception.localizedMessage}",
+                                Toast.LENGTH_LONG
+                            ).show()
                         }
                     )
                 },

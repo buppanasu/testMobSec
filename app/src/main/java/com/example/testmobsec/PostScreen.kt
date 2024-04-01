@@ -39,8 +39,10 @@ fun PostScreen(
     val profileViewModel: ProfileViewModel = viewModel()
     val postViewModel: PostViewModel = viewModel()
     val context = LocalContext.current // The context is used to display toast messages.
-    val focusRequester = remember { FocusRequester() } // The focusRequester is used to request focus on the text field.
-    val keyboardController = LocalSoftwareKeyboardController.current // The keyboardController is used to show the software keyboard.
+    val focusRequester =
+        remember { FocusRequester() } // The focusRequester is used to request focus on the text field.
+    val keyboardController =
+        LocalSoftwareKeyboardController.current // The keyboardController is used to show the software keyboard.
     var postText by remember { mutableStateOf("") }  // The postText state variable is used to store the content of the post entered by the user.
     val profileImageUrl by profileViewModel.profileImageUrl.collectAsState() // The profileImageUrl state variable is used to store the URL of the profile image.
 
@@ -67,7 +69,7 @@ fun PostScreen(
                             .clip(CircleShape)
                             .border(1.5.dp, MaterialTheme.colorScheme.primary, CircleShape)
                     )
-                }  ?: Text("No profile image available")
+                } ?: Text("No profile image available")
 
                 // The BasicTextField composable allows the user to enter the content of the post.
                 BasicTextField(
@@ -81,7 +83,7 @@ fun PostScreen(
                         fontSize = 24.sp, // Set the font size bigger
                     ),
 
-                )
+                    )
 
             }
             Spacer(modifier = Modifier.height(8.dp))
@@ -93,12 +95,17 @@ fun PostScreen(
                         context = context,
                         onSuccess = {
                             // If the post is uploaded successfully, a toast message is displayed and the user is navigated to the profile screen.
-                            Toast.makeText(context, "Post created successfully", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(context, "Post created successfully", Toast.LENGTH_SHORT)
+                                .show()
                             navController.navigate("profile_screen")
                         },
                         onFailure = { exception ->
                             // If the post fails to upload, an error message is displayed.
-                            Toast.makeText(context, "Failed to post: ${exception.localizedMessage}", Toast.LENGTH_LONG).show()
+                            Toast.makeText(
+                                context,
+                                "Failed to post: ${exception.localizedMessage}",
+                                Toast.LENGTH_LONG
+                            ).show()
                         }
                     )
                 },
@@ -109,7 +116,6 @@ fun PostScreen(
         }
     }
 }
-
 
 
 @Preview(showBackground = true)

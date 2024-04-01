@@ -37,6 +37,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.testmobsec.viewModel.BandViewModel
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+
 // This composable function creates the bottom app bar content with navigation icons.
 @Composable
 fun BottomAppBarContent(
@@ -54,9 +55,19 @@ fun BottomAppBarContent(
         containerColor = MaterialTheme.colorScheme.primaryContainer, // Sets the bottom app bar's background color.
         contentColor = MaterialTheme.colorScheme.onPrimary, // Sets the icon and text color in the bottom app bar.
     ) {
-        IconTextButton(navController, Icons.Default.Home, "Home", "home_screen") // Home navigation button.
+        IconTextButton(
+            navController,
+            Icons.Default.Home,
+            "Home",
+            "home_screen"
+        ) // Home navigation button.
         Spacer(Modifier.weight(1f, true)) // Spacer for even distribution of icons.
-        IconTextButton(navController, Icons.Default.Search, "Search", "searchband_screen") // Search navigation button.
+        IconTextButton(
+            navController,
+            Icons.Default.Search,
+            "Search",
+            "searchband_screen"
+        ) // Search navigation button.
 
         // Conditionally show the Band icon only for ARTIST role
         if (userRole == "ARTIST") {
@@ -70,9 +81,15 @@ fun BottomAppBarContent(
         }
 
         Spacer(Modifier.weight(1f, true))
-        IconTextButton(navController, Icons.Default.Person, "Profile", "profile_screen") // Profile navigation button.
+        IconTextButton(
+            navController,
+            Icons.Default.Person,
+            "Profile",
+            "profile_screen"
+        ) // Profile navigation button.
     }
 }
+
 // This composable function creates the top app bar content with title and action icons based on the current navigation route.
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -80,7 +97,7 @@ fun TopAppBarContent(navController: NavController) {
     val currentBackStackEntry by navController.currentBackStackEntryAsState() // Observes the current navigation stack.
     val currentRoute = currentBackStackEntry?.destination?.route // Retrieves the current route.
     // Determines the title of the top app bar based on the currentRoute.
-    val title = when{
+    val title = when {
         // Add cases for matching routes and setting respective titles.
         currentRoute?.startsWith("home_screen") == true -> "Home"
         currentRoute?.startsWith("profile_screen") == true -> "Profile"
@@ -100,7 +117,6 @@ fun TopAppBarContent(navController: NavController) {
         currentRoute?.startsWith("bandPost_screen") == true -> "Upload Band Post"
 
 
-
         // Add more cases for other screens
         else -> "App"
     }
@@ -115,17 +131,16 @@ fun TopAppBarContent(navController: NavController) {
         ),
         navigationIcon = {
             // Conditional rendering of back navigation icon for specific screens.
-            if(currentRoute == "edit_profile_screen"){
-                IconButton(onClick = { navController.navigate("profile_screen")  }) {
+            if (currentRoute == "edit_profile_screen") {
+                IconButton(onClick = { navController.navigate("profile_screen") }) {
                     Icon(
                         imageVector = Icons.Filled.ArrowBack,
                         contentDescription = "Back"
                     )
                 }
-            }
-            else if (currentRoute != null) {
-                if(currentRoute.startsWith("othersProfile_screen")){
-                    IconButton(onClick = { navController.popBackStack()  }) {
+            } else if (currentRoute != null) {
+                if (currentRoute.startsWith("othersProfile_screen")) {
+                    IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
                             imageVector = Icons.Filled.ArrowBack,
                             contentDescription = "Back"
@@ -137,7 +152,7 @@ fun TopAppBarContent(navController: NavController) {
         },
         actions = {
             // Defines action icons dynamically based on the current route.
-            if(currentRoute == "profile_screen") {
+            if (currentRoute == "profile_screen") {
                 // Display settings icon when on the profile screen
                 IconButton(onClick = { navController.navigate("edit_profile_screen") }) {
                     Icon(
@@ -145,17 +160,20 @@ fun TopAppBarContent(navController: NavController) {
                         contentDescription = "Edit Profile Page"
                     )
                 }
-            }else if (currentRoute != null) {
-                if(currentRoute.startsWith("comment_screen") || currentRoute.startsWith("post_screen") || currentRoute.startsWith("postDetails_screen")){
+            } else if (currentRoute != null) {
+                if (currentRoute.startsWith("comment_screen") || currentRoute.startsWith("post_screen") || currentRoute.startsWith(
+                        "postDetails_screen"
+                    )
+                ) {
                     IconButton(onClick = { navController.popBackStack() }) {
                         Icon(
                             imageVector = Icons.Filled.Close,
                             contentDescription = "Close"
                         )
                     }
-                } else if(currentRoute.startsWith("othersProfile_screen")){
+                } else if (currentRoute.startsWith("othersProfile_screen")) {
                     // No action if it starts with "othersProfile_screen"
-                }else if(currentRoute.startsWith("home_screen")){
+                } else if (currentRoute.startsWith("home_screen")) {
                     IconButton(onClick = { navController.navigate("chat_list_screen") }) {
                         Icon(
                             imageVector = Icons.Filled.ChatBubbleOutline,
@@ -163,14 +181,14 @@ fun TopAppBarContent(navController: NavController) {
                         )
                     }
                 }
-                } else{
-                    IconButton(onClick = { navController.navigate("profile_screen") }) {
-                        Icon(
-                            imageVector = Icons.Filled.Person,
-                            contentDescription = "Profile Page"
-                        )
-                    }
+            } else {
+                IconButton(onClick = { navController.navigate("profile_screen") }) {
+                    Icon(
+                        imageVector = Icons.Filled.Person,
+                        contentDescription = "Profile Page"
+                    )
                 }
+            }
 
 
         },
@@ -204,6 +222,7 @@ fun IconTextButton(
         Text(text = text, style = MaterialTheme.typography.labelSmall)
     }
 }
+
 // Similar to IconTextButton but with a custom onClick action for more complex click behaviors.
 @Composable
 fun IconTextButton2(

@@ -54,8 +54,10 @@ fun PostDetailsScreen(
         topBar = { TopAppBarContent(navController = navController) },
         // BottomBar or FloatingActionButton can be added here if needed
     ) { paddingValues ->
-        Column(modifier = Modifier
-            .padding(paddingValues)) {
+        Column(
+            modifier = Modifier
+                .padding(paddingValues)
+        ) {
             postDetails?.let { post ->
                 val postUserName = post["userName"] as? String ?: "Unknown"
                 val postContent = post["content"] as? String ?: "No Content"
@@ -67,106 +69,124 @@ fun PostDetailsScreen(
                     profileViewModel.fetchProfileImageUrlByUserId(userId)
                 }
 
-                PostItem(userId,userName = postUserName, content = postContent, imageUrl = postImageUrl, timestamp = postTimestamp, navController)
+                PostItem(
+                    userId,
+                    userName = postUserName,
+                    content = postContent,
+                    imageUrl = postImageUrl,
+                    timestamp = postTimestamp,
+                    navController
+                )
                 Divider()
-            // Display posts in the first tab
-            LazyColumn(
-                modifier = Modifier
-                    .padding(paddingValues)
-            ) {
-                items(comments) { postMap ->
-                    val name = postMap["userName"] as? String ?: "No Content"
-                    val content = postMap["comment"] as? String ?: "No Content"
-                    val postDocRef = postMap["postId"] as? DocumentReference
-                    val commentPostId = postDocRef?.id.toString()
-                    val timestamp = postMap["timestamp"]
-                    val isLiked by postsViewModel.isPostLikedByUser(commentPostId)
-                        .collectAsState(initial = false)
-                    val likesCountFlow = postsViewModel.getLikesCountFlow(commentPostId)
-                    val likesCount by likesCountFlow.collectAsState()
-                    val userDocRef = postMap["userId"] as? DocumentReference
-                    val userId = userDocRef?.id.toString()
-                    val commentsCountFlow = postsViewModel.getCommentsCountFlow(commentPostId)
-                    val commentsCount by commentsCountFlow.collectAsState()
-                    LaunchedEffect(userId) {
-                        profileViewModel.fetchProfileImageUrlByUserId(userId)
-                    }
-                    val imageUrl = profileImageUrls[userId]
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Spacer(modifier = Modifier.width(35.dp))
-                        Image(
-                            painter = rememberAsyncImagePainter(imageUrl),
-                            contentDescription = "",
+                // Display posts in the first tab
+                LazyColumn(
+                    modifier = Modifier
+                        .padding(paddingValues)
+                ) {
+                    items(comments) { postMap ->
+                        val name = postMap["userName"] as? String ?: "No Content"
+                        val content = postMap["comment"] as? String ?: "No Content"
+                        val postDocRef = postMap["postId"] as? DocumentReference
+                        val commentPostId = postDocRef?.id.toString()
+                        val timestamp = postMap["timestamp"]
+                        val isLiked by postsViewModel.isPostLikedByUser(commentPostId)
+                            .collectAsState(initial = false)
+                        val likesCountFlow = postsViewModel.getLikesCountFlow(commentPostId)
+                        val likesCount by likesCountFlow.collectAsState()
+                        val userDocRef = postMap["userId"] as? DocumentReference
+                        val userId = userDocRef?.id.toString()
+                        val commentsCountFlow = postsViewModel.getCommentsCountFlow(commentPostId)
+                        val commentsCount by commentsCountFlow.collectAsState()
+                        LaunchedEffect(userId) {
+                            profileViewModel.fetchProfileImageUrlByUserId(userId)
+                        }
+                        val imageUrl = profileImageUrls[userId]
+                        Row(
                             modifier = Modifier
-                                .size(40.dp)
-                                .clip(CircleShape)
-                                .border(1.5.dp, MaterialTheme.colorScheme.primary, CircleShape)
-                        ) ?: Text("No profile image available")
-                        Spacer(modifier = Modifier.width(20.dp))
-                        Column(
-                            modifier = Modifier
-                                .weight(1f)
-                                .padding(8.dp)
+                                .fillMaxWidth()
+                                .padding(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Text(
-                                text = name, fontWeight = FontWeight.Bold,
-                                style = TextStyle(fontSize = 18.sp)
-                            )
-                            Divider()
-                            Text(text = content, style = TextStyle(fontSize = 14.sp))
-                            Text(text = formatDate(timestamp), style = TextStyle(fontSize = 12.sp))
-                            Spacer(modifier = Modifier.height(4.dp))
+                            Spacer(modifier = Modifier.width(35.dp))
+                            Image(
+                                painter = rememberAsyncImagePainter(imageUrl),
+                                contentDescription = "",
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(CircleShape)
+                                    .border(1.5.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                            ) ?: Text("No profile image available")
+                            Spacer(modifier = Modifier.width(20.dp))
+                            Column(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .padding(8.dp)
+                            ) {
+                                Text(
+                                    text = name, fontWeight = FontWeight.Bold,
+                                    style = TextStyle(fontSize = 18.sp)
+                                )
+                                Divider()
+                                Text(text = content, style = TextStyle(fontSize = 14.sp))
+                                Text(
+                                    text = formatDate(timestamp),
+                                    style = TextStyle(fontSize = 12.sp)
+                                )
+                                Spacer(modifier = Modifier.height(4.dp))
 
-                        }
+                            }
 
-                        val hasCommented by postsViewModel.hasUserCommented(commentPostId).collectAsState(
-                            initial = false
-                        )
-                        val commentedIconColor = if (hasCommented) Color.Magenta else Color.Gray
-                        IconButton(onClick = { navController.navigate("comment_screen/$postId") }) {
-                            Icon(
-                                Icons.Filled.Comment,
-                                contentDescription = "Comment",
-                                tint = commentedIconColor
-                            )
-                        }
-                        if (commentsCount > 0) {
-                            Text(text = "$commentsCount")
-                        }
+                            val hasCommented by postsViewModel.hasUserCommented(commentPostId)
+                                .collectAsState(
+                                    initial = false
+                                )
+                            val commentedIconColor = if (hasCommented) Color.Magenta else Color.Gray
+                            IconButton(onClick = { navController.navigate("comment_screen/$postId") }) {
+                                Icon(
+                                    Icons.Filled.Comment,
+                                    contentDescription = "Comment",
+                                    tint = commentedIconColor
+                                )
+                            }
+                            if (commentsCount > 0) {
+                                Text(text = "$commentsCount")
+                            }
 
-                        // Like button with real-time color change based on like status
-                        val likeIconColor = if (isLiked) Color.Blue else Color.Gray
-                        IconButton(onClick = { postsViewModel.toggleLike(commentPostId) }) {
-                            Icon(
-                                Icons.Filled.ThumbUp,
-                                contentDescription = "Like",
-                                tint = likeIconColor
-                            )
-                        }
+                            // Like button with real-time color change based on like status
+                            val likeIconColor = if (isLiked) Color.Blue else Color.Gray
+                            IconButton(onClick = { postsViewModel.toggleLike(commentPostId) }) {
+                                Icon(
+                                    Icons.Filled.ThumbUp,
+                                    contentDescription = "Like",
+                                    tint = likeIconColor
+                                )
+                            }
 
-                        // Display likes count, updating in real-time
-                        if (likesCount > 0) {
-                            Text(text = "$likesCount")
+                            // Display likes count, updating in real-time
+                            if (likesCount > 0) {
+                                Text(text = "$likesCount")
+                            }
                         }
+                        Divider()
                     }
-                    Divider()
                 }
             }
+
+
         }
 
-
     }
-
 }
-    }
 
 @Composable
-fun PostItem(userId: String, userName: String, content: String, imageUrl: String?, timestamp: Any?, navController: NavController) {
+fun PostItem(
+    userId: String,
+    userName: String,
+    content: String,
+    imageUrl: String?,
+    timestamp: Any?,
+    navController: NavController
+) {
     Row(
         modifier = Modifier.padding(8.dp),
         verticalAlignment = Alignment.CenterVertically

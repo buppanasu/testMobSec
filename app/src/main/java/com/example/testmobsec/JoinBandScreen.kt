@@ -1,4 +1,5 @@
 package com.example.testmobsec
+
 import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -50,7 +51,8 @@ fun JoinBandScreen(navController: NavController = rememberNavController()) {
                             searchResults.clear()
                             for (document in documents) {
                                 val band = document.toObject(Band::class.java).also {
-                                    it.bandId = document.id // Store the document ID in the band object
+                                    it.bandId =
+                                        document.id // Store the document ID in the band object
                                 }
                                 searchResults.add(band)
                             }

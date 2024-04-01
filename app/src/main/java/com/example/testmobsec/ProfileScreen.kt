@@ -73,18 +73,19 @@ fun ProfileScreen(
         topBar = { TopAppBarContent(navController = navController) },
         bottomBar = { BottomAppBarContent(navController) },
         floatingActionButton = { // Use the floatingActionButton parameter to add the IconButton at the bottom right
-            FloatingActionButton(onClick = { navController.navigate("post_screen")}) {
+            FloatingActionButton(onClick = { navController.navigate("post_screen") }) {
                 Icon(Icons.Filled.Add, contentDescription = "Add")
             }
         },
         floatingActionButtonPosition = FabPosition.End, // Position the button at the end (right)
 //        isFloatingActionButtonDocked = false, // Set to false so the FAB is not docked in the BottomAppBar
-    ) {
-            paddingValues ->
-        Column(modifier = Modifier
-            .fillMaxSize()
-            .padding(paddingValues)) {
-           ProfileTopSection(navController,profileViewModel, postsViewModel)
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            ProfileTopSection(navController, profileViewModel, postsViewModel)
             TabRowSection(selectedTab = selectedTab, onTabSelected = { tab ->
                 selectedTab = tab
             }, postsViewModel = postsViewModel, profileViewModel, navController)
@@ -96,11 +97,13 @@ fun ProfileScreen(
 
 
 }
+
 // Composable function for displaying the tab row and its respective content based on the selected tab.
 @Composable
-fun TabRowSection(selectedTab: Int, onTabSelected: (Int) -> Unit,
-                  postsViewModel: PostViewModel,profileViewModel: ProfileViewModel
-,navController: NavController){
+fun TabRowSection(
+    selectedTab: Int, onTabSelected: (Int) -> Unit,
+    postsViewModel: PostViewModel, profileViewModel: ProfileViewModel, navController: NavController
+) {
     // The function listens to changes in posts collection from the ViewModel.
     val posts by postsViewModel.posts.collectAsState(initial = emptyList())
     // TabRow to switch between different content sections: Posts, Comments, Likes.
@@ -108,10 +111,10 @@ fun TabRowSection(selectedTab: Int, onTabSelected: (Int) -> Unit,
         // Definition of individual tabs
         Tab(
             selected = selectedTab == 0,
-            onClick = { onTabSelected(0)
-                },
+            onClick = {
+                onTabSelected(0)
+            },
             text = { Text("Posts") }
-
 
 
         )
@@ -141,11 +144,12 @@ fun TabRowSection(selectedTab: Int, onTabSelected: (Int) -> Unit,
             // Display posts in the first tab
             LazyColumn {
                 items(posts) { postMap ->
-                    val name = postMap["userName"] as? String?: "No Content"
+                    val name = postMap["userName"] as? String ?: "No Content"
                     val content = postMap["content"] as? String ?: "No Content"
                     val timestamp = postMap["timestamp"]
                     val postId = postMap["postId"] as String
-                    val isLiked by postsViewModel.isPostLikedByUser(postId).collectAsState(initial = false)
+                    val isLiked by postsViewModel.isPostLikedByUser(postId)
+                        .collectAsState(initial = false)
                     val likesCountFlow = postsViewModel.getLikesCountFlow(postId)
                     val likesCount by likesCountFlow.collectAsState()
                     val commentsCountFlow = postsViewModel.getCommentsCountFlow(postId)
@@ -168,10 +172,17 @@ fun TabRowSection(selectedTab: Int, onTabSelected: (Int) -> Unit,
                                     modifier = Modifier
                                         .size(60.dp) // Adjust size to match the text height
                                         .clip(CircleShape)
-                                        .border(1.5.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                                        .border(
+                                            1.5.dp,
+                                            MaterialTheme.colorScheme.primary,
+                                            CircleShape
+                                        )
                                 )
                             } else {
-                                Text("No profile image available", style = MaterialTheme.typography.bodyMedium)
+                                Text(
+                                    "No profile image available",
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
                             }
 
                         }
@@ -194,8 +205,10 @@ fun TabRowSection(selectedTab: Int, onTabSelected: (Int) -> Unit,
                     }
                     // Action icons and counts
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        val hasCommented by postsViewModel.hasUserCommented(postId).collectAsState(initial = false)
-                        val isLiked by postsViewModel.isPostLikedByUser(postId).collectAsState(initial = false)
+                        val hasCommented by postsViewModel.hasUserCommented(postId)
+                            .collectAsState(initial = false)
+                        val isLiked by postsViewModel.isPostLikedByUser(postId)
+                            .collectAsState(initial = false)
 
                         // Comment icon with count
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -238,6 +251,7 @@ fun TabRowSection(selectedTab: Int, onTabSelected: (Int) -> Unit,
                 }
             }
         }
+
         1 -> {
             //shows the posts user has commented on
             postsViewModel.fetchCommentedPosts() //fetches the posts the current user has commented on before
@@ -246,11 +260,12 @@ fun TabRowSection(selectedTab: Int, onTabSelected: (Int) -> Unit,
             // Display comments and their data
             LazyColumn {
                 items(commentedPosts) { postMap ->
-                    val name = postMap["userName"] as? String?: "No Content"
+                    val name = postMap["userName"] as? String ?: "No Content"
                     val content = postMap["content"] as? String ?: "No Content"
                     val timestamp = postMap["timestamp"]
                     val postId = postMap["postId"] as String
-                    val isLiked by postsViewModel.isPostLikedByUser(postId).collectAsState(initial = false)
+                    val isLiked by postsViewModel.isPostLikedByUser(postId)
+                        .collectAsState(initial = false)
                     val likesCountFlow = postsViewModel.getLikesCountFlow(postId)
                     val likesCount by likesCountFlow.collectAsState()
                     val userDocRef = postMap["userId"] as? DocumentReference
@@ -278,7 +293,10 @@ fun TabRowSection(selectedTab: Int, onTabSelected: (Int) -> Unit,
                                     .size(60.dp)
                                     .clip(CircleShape)
                                     .border(1.5.dp, MaterialTheme.colorScheme.primary, CircleShape)
-                            ) ?: Text("No profile image available", style = MaterialTheme.typography.bodyMedium)
+                            ) ?: Text(
+                                "No profile image available",
+                                style = MaterialTheme.typography.bodyMedium
+                            )
 
 
                         }
@@ -308,9 +326,14 @@ fun TabRowSection(selectedTab: Int, onTabSelected: (Int) -> Unit,
                     }
 // Action icons directly below the profile image
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        val hasCommented by postsViewModel.hasUserCommented(postId).collectAsState(initial = false)
+                        val hasCommented by postsViewModel.hasUserCommented(postId)
+                            .collectAsState(initial = false)
                         IconButton(onClick = { navController.navigate("comment_screen/$postId") }) {
-                            Icon(Icons.Filled.Comment, contentDescription = "Comment", tint = if(hasCommented) Color.Magenta else Color.Gray)
+                            Icon(
+                                Icons.Filled.Comment,
+                                contentDescription = "Comment",
+                                tint = if (hasCommented) Color.Magenta else Color.Gray
+                            )
                         }
                         if (commentsCount > 0) {
                             Text(text = "$commentsCount")
@@ -320,7 +343,11 @@ fun TabRowSection(selectedTab: Int, onTabSelected: (Int) -> Unit,
 
                         val likeIconColor = if (isLiked) Color.Blue else Color.Gray
                         IconButton(onClick = { postsViewModel.toggleLike(postId) }) {
-                            Icon(Icons.Filled.ThumbUp, contentDescription = "Like", tint = likeIconColor)
+                            Icon(
+                                Icons.Filled.ThumbUp,
+                                contentDescription = "Like",
+                                tint = likeIconColor
+                            )
                         }
                         if (likesCount > 0) {
                             Text(text = "$likesCount")
@@ -333,7 +360,7 @@ fun TabRowSection(selectedTab: Int, onTabSelected: (Int) -> Unit,
 
         }
 
-        2->{
+        2 -> {
             postsViewModel.fetchLikedPosts() //fetches all post the current user has liked
             val likedPosts by postsViewModel.likedPosts.collectAsState()
             val profileImageUrls by profileViewModel.profileImageUrls.collectAsState()
@@ -342,18 +369,20 @@ fun TabRowSection(selectedTab: Int, onTabSelected: (Int) -> Unit,
             // Display posts that the user has liked
             LazyColumn {
                 items(likedPosts) { postMap ->
-                    val name = postMap["userName"] as? String?: "No Content"
+                    val name = postMap["userName"] as? String ?: "No Content"
                     val content = postMap["content"] as? String ?: "No Content"
                     val timestamp = postMap["timestamp"]
                     val postId = postMap["postId"] as String
-                    val isLiked by postsViewModel.isPostLikedByUser(postId).collectAsState(initial = false)
+                    val isLiked by postsViewModel.isPostLikedByUser(postId)
+                        .collectAsState(initial = false)
                     val likesCountFlow = postsViewModel.getLikesCountFlow(postId)
                     val likesCount by likesCountFlow.collectAsState()
                     val userDocRef = postMap["userId"] as? DocumentReference
                     val userId = userDocRef?.id.toString()
                     val commentsCountFlow = postsViewModel.getCommentsCountFlow(postId)
                     val commentsCount by commentsCountFlow.collectAsState()
-                    val hasCommented by postsViewModel.hasUserCommented(postId).collectAsState(initial = false)
+                    val hasCommented by postsViewModel.hasUserCommented(postId)
+                        .collectAsState(initial = false)
                     val likeIconColor = if (isLiked) Color.Blue else Color.Gray
                     LaunchedEffect(userId) {
                         profileViewModel.fetchProfileImageUrlByUserId(userId)
@@ -379,10 +408,17 @@ fun TabRowSection(selectedTab: Int, onTabSelected: (Int) -> Unit,
                                     modifier = Modifier
                                         .size(60.dp) // Size adjusted for visibility
                                         .clip(CircleShape)
-                                        .border(1.5.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                                        .border(
+                                            1.5.dp,
+                                            MaterialTheme.colorScheme.primary,
+                                            CircleShape
+                                        )
                                 )
                             } else {
-                                Text("No profile image available", style = MaterialTheme.typography.bodyMedium)
+                                Text(
+                                    "No profile image available",
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
                             }
 
 
@@ -409,8 +445,12 @@ fun TabRowSection(selectedTab: Int, onTabSelected: (Int) -> Unit,
                         // Action icons below the profile image
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             // Comments icon with count
-                            IconButton(onClick = { navController.navigate("comment_screen/$postId")  }) {
-                                Icon(Icons.Filled.Comment, contentDescription = "Comment", tint = if(hasCommented) Color.Magenta else Color.Gray)
+                            IconButton(onClick = { navController.navigate("comment_screen/$postId") }) {
+                                Icon(
+                                    Icons.Filled.Comment,
+                                    contentDescription = "Comment",
+                                    tint = if (hasCommented) Color.Magenta else Color.Gray
+                                )
                             }
                             if (commentsCount > 0) {
                                 Text(text = "$commentsCount")
@@ -419,8 +459,12 @@ fun TabRowSection(selectedTab: Int, onTabSelected: (Int) -> Unit,
                             Spacer(modifier = Modifier.width(16.dp))
 
                             // Likes icon with count
-                            IconButton(onClick = {postsViewModel.toggleLike(postId) }) {
-                                Icon(Icons.Filled.ThumbUp, contentDescription = "Like", tint = likeIconColor)
+                            IconButton(onClick = { postsViewModel.toggleLike(postId) }) {
+                                Icon(
+                                    Icons.Filled.ThumbUp,
+                                    contentDescription = "Like",
+                                    tint = likeIconColor
+                                )
                             }
                             if (likesCount > 0) {
                                 Text(text = "$likesCount")
@@ -442,9 +486,11 @@ fun TabRowSection(selectedTab: Int, onTabSelected: (Int) -> Unit,
 // This composable function displays the top section of the Profile screen. It shows the user's profile image,
 // name, and counts of posts, followers, and following. It also includes a button to edit the profile.
 @Composable
-fun ProfileTopSection(navController: NavController, // Navigation controller to handle navigation events.
-                      profileViewModel: ProfileViewModel, // ViewModel to fetch and hold profile data.
-                      postsViewModel: PostViewModel){ // ViewModel to fetch and hold posts data.
+fun ProfileTopSection(
+    navController: NavController, // Navigation controller to handle navigation events.
+    profileViewModel: ProfileViewModel, // ViewModel to fetch and hold profile data.
+    postsViewModel: PostViewModel
+) { // ViewModel to fetch and hold posts data.
     // Collect state from ProfileViewModel and PostViewModel.
     val name by profileViewModel.name.collectAsState()
     val profileImageUrl by profileViewModel.profileImageUrl.collectAsState()
@@ -496,7 +542,7 @@ fun ProfileTopSection(navController: NavController, // Navigation controller to 
             )
         }
 
-        }
+    }
 
     Row(
         modifier = Modifier
@@ -528,7 +574,7 @@ fun ProfileTopSection(navController: NavController, // Navigation controller to 
         verticalAlignment = Alignment.Top
     ) {
 
-        Button(onClick = {navController.navigate("edit_profile_screen")}) {
+        Button(onClick = { navController.navigate("edit_profile_screen") }) {
             Text("Edit Profile")
         }
 

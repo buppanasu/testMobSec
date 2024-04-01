@@ -100,9 +100,12 @@ fun OtherBandScreen(navController: NavController, bandId: String, bandViewModel:
     Scaffold(
         topBar = { TopAppBarContent(navController) },
         bottomBar = { BottomAppBarContent(navController) }
-    ) {paddingValues ->
+    ) { paddingValues ->
         Surface(modifier = Modifier.fillMaxSize()) {
-            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(paddingValues).fillMaxSize()) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.padding(paddingValues).fillMaxSize()
+            ) {
                 Text(
                     text = bandDetails?.bandName ?: "Loading...",
                     style = MaterialTheme.typography.headlineSmall,
@@ -127,7 +130,7 @@ fun OtherBandScreen(navController: NavController, bandId: String, bandViewModel:
 
                 }
 
-                Row(){
+                Row() {
                     Button(
                         onClick = {
                             bandViewModel.toggleFollowBand(bandId)
@@ -145,7 +148,6 @@ fun OtherBandScreen(navController: NavController, bandId: String, bandViewModel:
                     }
 
                 }
-
 
 
                 // Additional UI elements as required for your app
@@ -294,7 +296,11 @@ fun OtherBandScreen(navController: NavController, bandId: String, bandViewModel:
                                         modifier = Modifier
                                             .size(40.dp)
                                             .clip(CircleShape)
-                                            .border(1.5.dp, MaterialTheme.colorScheme.primary, CircleShape)
+                                            .border(
+                                                1.5.dp,
+                                                MaterialTheme.colorScheme.primary,
+                                                CircleShape
+                                            )
                                     ) ?: Text("No profile image available")
                                     Spacer(modifier = Modifier.width(20.dp))
                                     Column(
