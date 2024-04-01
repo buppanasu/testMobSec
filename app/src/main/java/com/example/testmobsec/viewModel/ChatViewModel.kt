@@ -20,14 +20,18 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
-
+// ViewModel responsible for handling chat interactions between users.
 class ChatViewModel(private val receiverId: String) : ViewModel() {
+    // StateFlow for storing and observing chat messages.
     private val _chats = MutableStateFlow<List<Chat>>(emptyList())
     val chats: StateFlow<List<Chat>> = _chats
+    // Firebase Firestore database instance for retrieving chat data.
     private val db = FirebaseFirestore.getInstance()
+    // Firebase Authentication instance to get the current user's information.
     private val auth = FirebaseAuth.getInstance()
+    // The current user's ID, derived from FirebaseAuth.
     val userId = auth.currentUser?.uid
-
+    // StateFlows for storing user-related information.
     private val _userName = MutableStateFlow<String?>(null)
     val userName: StateFlow<String?> = _userName
 
@@ -44,17 +48,12 @@ class ChatViewModel(private val receiverId: String) : ViewModel() {
 
 
     init {
-
-
         fetchUserRoleAndBand()
-//        fetchChats()
         setupChatFetching()
-
-
     }
 
-    // Assuming you have a ViewModel or Repository
 
+    // Sets up logic for fetching chat messages based on the user's role and potential band association.
     private fun setupChatFetching() {
         viewModelScope.launch {
             _userRole.combine(_userBandId) { role, bandId ->
@@ -73,6 +72,7 @@ class ChatViewModel(private val receiverId: String) : ViewModel() {
 
 
 
+    // fetches the users role and if the role is an ARTIST then fetch the band the user is a member of
     fun fetchUserRoleAndBand() {
         val userId = auth.currentUser?.uid ?: return
         Log.d("ChatViewModel", "Fetching user role and band for userID: $userId")
@@ -111,6 +111,7 @@ class ChatViewModel(private val receiverId: String) : ViewModel() {
         }
     }
 
+    // fetch all chat messages between the current user and another band based on the bands ID
     private fun fetchBandChats(bandId: String) {
 
         Log.d("ChatViewModel", "Fetching chats for bandId: $bandId with receiverId: $receiverId")
@@ -142,6 +143,7 @@ class ChatViewModel(private val receiverId: String) : ViewModel() {
             }
     }
 
+    // fetch all chat messages between the current user and another user based on the users ID
     private fun fetchUserChats(receiverId: String) {
         val senderId = FirebaseAuth.getInstance().currentUser?.uid ?: return
 

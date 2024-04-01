@@ -23,14 +23,18 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.lang.Exception
 import java.sql.Timestamp
-
+// ViewModel responsible for handling creation of posts,feedback and comments
 class PostViewModel: ViewModel() {
+    // Firebase Firestore and Auth instances for database and authentication operations.
     private val db = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
-    private val userId = auth.currentUser?.uid
+
+    private val userId = auth.currentUser?.uid // The current user's ID, if logged in.
+
+    // StateFlows for various data types to be observed by the UI.
     private val _posts = MutableStateFlow<List<Map<String, Any>>>(emptyList())
     val posts: StateFlow<List<Map<String, Any>>> = _posts
-
+    // Similar structure is used for posts from bands, followed band posts, and band feedbacks.
     private val _bandPosts = MutableStateFlow<List<Map<String, Any>>>(emptyList())
     val bandPosts: StateFlow<List<Map<String, Any>>> = _bandPosts
 
@@ -54,6 +58,8 @@ class PostViewModel: ViewModel() {
 
     private val _selectedPostDetails = MutableStateFlow<Map<String, Any>?>(null)
     val selectedPostDetails = _selectedPostDetails.asStateFlow()
+
+    // Fetches posts for the home screen, including posts from bands and followed users.
     fun fetchPostsForHome(){
         viewModelScope.launch{
             try {
@@ -108,6 +114,8 @@ class PostViewModel: ViewModel() {
         }
 
     }
+
+    // Fetches posts from bands the current user follows.
     fun fetchPostsForFollowedBands() {
         viewModelScope.launch {
             try {
@@ -169,7 +177,7 @@ class PostViewModel: ViewModel() {
         }
     }
 
-
+    // Fetches posts made by users the current user is following.
     fun fetchPostsFromFollowing() {
         viewModelScope.launch {
             try {
@@ -218,8 +226,7 @@ class PostViewModel: ViewModel() {
     }
 
 
-
-
+    // Fetches the count of posts made by the current user or specified user
     fun fetchPostsCountForCurrentUser(userIdParam: String? = null) {
 
         // Use the provided userId if available, or fall back to the current user's ID
@@ -241,6 +248,9 @@ class PostViewModel: ViewModel() {
                 }
         }
     }
+
+    // Function to asynchronously fetch the count of posts made by a specified band.
+    // The function accepts an optional parameter `bandIdParam` which can be null.
     fun fetchPostsCountForBand(bandIdParam: String? = null) {
         // Use the provided bandId if available
         val bandId = bandIdParam ?: return
@@ -262,7 +272,8 @@ class PostViewModel: ViewModel() {
         }
     }
 
-
+    // Function to asynchronously fetch the commented posts the user has commented on.
+    // The function accepts an optional parameter `userIdParam` which can be null.
     fun fetchCommentedPosts(userIdParam: String? = null) {
         viewModelScope.launch {
             val userDocumentRef = userIdParam?.let { db.collection("users").document(it) }
@@ -292,6 +303,9 @@ class PostViewModel: ViewModel() {
             commentedPosts.value = postsWithUserNames
         }
     }
+
+    // Function to asynchronously fetch the posts user has liked.
+    // The function accepts an optional parameter `userIdParam` which can be null.
     fun fetchLikedPosts(userIdParam: String? = null) {
         viewModelScope.launch {
             val userDocumentRef = userIdParam?.let { db.collection("users").document(it) }
@@ -321,6 +335,7 @@ class PostViewModel: ViewModel() {
             likedPosts.value = postsWithUserNames
         }
     }
+    // check to see if the current user has liked a post based on its post ID
     fun isPostLikedByUser(postId: String): Flow<Boolean> = flow {
 
         val likesCollection = db.collection("likes")
@@ -333,6 +348,7 @@ class PostViewModel: ViewModel() {
         emit(querySnapshot.documents.isNotEmpty())
     }.flowOn(Dispatchers.IO)
 
+    // check to see if the current user has left a comment on a post based on its post ID
     fun hasUserCommented(postId: String): Flow<Boolean> = flow {
 
         val commentsCollection = db.collection("comments")
@@ -345,7 +361,7 @@ class PostViewModel: ViewModel() {
         emit(querySnapshot.documents.isNotEmpty())
     }.flowOn(Dispatchers.IO)
 
-
+    // get likes count for each specific post based on its post ID
     fun getLikesCountFlow(postId: String): MutableStateFlow<Int> {
         // Return an existing flow if one already exists for this postId
         if (likesCounts.containsKey(postId)) {
@@ -372,7 +388,7 @@ class PostViewModel: ViewModel() {
 
         return newLikesCountFlow
     }
-
+    // get the comments count for each post based on its post ID
     fun getCommentsCountFlow(postId: String): MutableStateFlow<Int> {
         // Return an existing flow if one already exists for this postId
         if (commentCounts.containsKey(postId)) {
@@ -400,6 +416,7 @@ class PostViewModel: ViewModel() {
         return newCommentsCountFlow
     }
 
+    // Toggles the like status of a post for the current user.
     fun toggleLike(postId: String) {
         viewModelScope.launch {
             val likesCollection = db.collection("likes")
@@ -423,6 +440,8 @@ class PostViewModel: ViewModel() {
             }
         }
     }
+
+    // fetch a post by its post ID
     fun fetchPostByPostId(postId: String) {
         viewModelScope.launch {
             try {
@@ -461,7 +480,7 @@ class PostViewModel: ViewModel() {
         }
     }
 
-
+    // fetch comments for a specific post based on its post ID
     fun fetchCommentsForPost(postId: String){
         viewModelScope.launch {
             try {
@@ -566,7 +585,7 @@ class PostViewModel: ViewModel() {
         }
     }
 
-
+    // fetch
     fun fetchPostsForUser(userIdParam: String? = null) {
         viewModelScope.launch {
             try {
@@ -617,6 +636,7 @@ class PostViewModel: ViewModel() {
         }
     }
 
+    // Adds a comment to a post.
     fun addCommentToPost(postId: String, commentText: String) {
 
         val commentData = hashMapOf(
@@ -631,7 +651,7 @@ class PostViewModel: ViewModel() {
             .addOnFailureListener { e -> Log.w("PostViewModel", "Error adding comment", e) }
     }
 
-
+    // Uploads a post with specified content.
     fun uploadPost(
         content: String,
         context: Context, // Added context parameter
@@ -675,6 +695,7 @@ class PostViewModel: ViewModel() {
         }
     }
 
+    // Uploads a post on behalf of the band the user is a member of
     fun uploadBandPost(
         bandId: String,
         content: String,
@@ -723,6 +744,7 @@ class PostViewModel: ViewModel() {
         }
     }
 
+    // uploads feedback that users can give to bands
     fun uploadFeedback(
         bandId: String,
         feedback: String,
@@ -769,6 +791,7 @@ class PostViewModel: ViewModel() {
         }
     }
 
+    // fetch all feed back for a specific band based on its band ID
     fun fetchFeedbackForBand(bandIdParam: String? = null) {
         viewModelScope.launch {
             try {

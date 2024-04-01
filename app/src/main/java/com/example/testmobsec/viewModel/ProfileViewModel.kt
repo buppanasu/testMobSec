@@ -29,7 +29,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.tasks.await
-
+// ViewModel responsible for handling profile of user, updating user profile and password
 class ProfileViewModel() : ViewModel() {
     private var auth: FirebaseAuth = FirebaseAuth.getInstance()
     private var firestore: FirebaseFirestore = FirebaseFirestore.getInstance()
