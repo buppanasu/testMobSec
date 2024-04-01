@@ -43,7 +43,7 @@ import com.example.testmobsec.util.EmulCheck
 fun LoginScreen(navController: NavController = rememberNavController()) {
 
     // Check if the app is running on an emulator
-//    var isEmulator by remember { mutableStateOf(EmulCheck.isRunningOnEmulator()) }
+    var isEmulator by remember { mutableStateOf(EmulCheck.isRunningOnEmulator()) }
 
 
     var email: String by remember { mutableStateOf("") }
@@ -128,14 +128,14 @@ fun LoginScreen(navController: NavController = rememberNavController()) {
     if (!isAccessibilityEnabled) {
         showAccessibilityInstructions(context)
     }
-//
-//    if (isEmulator) {
-//        Toast.makeText(
-//            context,
-//            "Running on an emulator. Login disabled for security reasons.",
-//            Toast.LENGTH_LONG
-//        ).show()
-//    }
+
+    if (isEmulator) {
+        Toast.makeText(
+            context,
+            "Running on an emulator. Login disabled for security reasons.",
+            Toast.LENGTH_LONG
+        ).show()
+    }
 
     Column(
         modifier = Modifier
@@ -176,7 +176,7 @@ fun LoginScreen(navController: NavController = rememberNavController()) {
         Spacer(modifier = Modifier.height(10.dp))
         Button(
             onClick = {
-//                if (!isEmulator) {
+                if (!isEmulator) {
                     var isValid = true
 
                     if (!validateEmail()) isValid = false
@@ -244,29 +244,29 @@ fun LoginScreen(navController: NavController = rememberNavController()) {
                         Toast.makeText(context, "Please check your inputs", Toast.LENGTH_SHORT)
                             .show()
                     }
-//                }
+                }
             },
-//            enabled = !isEmulator,
+            enabled = !isEmulator,
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("Login")
         }
         Button(
             onClick = {
-//                if (!isEmulator) {
-//                    navController.navigate("register_screen")
-//                } else {
-//                    // Optionally, you could show a toast if you want to inform the user
-//                    Toast.makeText(
-//                        context,
-//                        "Signup disabled on emulator for security reasons.",
-//                        Toast.LENGTH_SHORT
-//                    ).show()
-//                }
+                if (!isEmulator) {
+                    navController.navigate("register_screen")
+                } else {
+                    // Optionally, you could show a toast if you want to inform the user
+                    Toast.makeText(
+                        context,
+                        "Signup disabled on emulator for security reasons.",
+                        Toast.LENGTH_SHORT
+                    ).show()
+                }
                 // Navigate to the signup screen (replace with your navigation logic)
                 //Navigator.push(context, MaterialPageRoute(builder: { context } => RegisterScreen(sharedViewModel)))
             },
-//            enabled = !isEmulator,
+            enabled = !isEmulator,
             modifier = Modifier.fillMaxWidth()
         ) {
             Text("No account? Signup here!")
